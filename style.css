@@ -1,0 +1,499 @@
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#020b1c;
+  color:#e8f3ff;
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+}
+
+button,
+input{
+  font:inherit;
+}
+
+button{
+  color:#dcecff;
+  background:#06162e;
+  border:1px solid #17375c;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.icon{
+  background:transparent;
+  border:0;
+  font-size:26px;
+  color:#b9cce0;
+}
+
+.topBtn{
+  padding:8px 14px;
+}
+
+.rec{
+  color:#ff4050;
+  border-color:#57232b;
+  padding:9px 15px;
+}
+
+.rec.active{
+  background:#3b1117;
+}
+
+.clock{
+  padding:10px 16px;
+  background:#06152b;
+  border-radius:6px;
+}
+
+header{
+  height:72px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:10px 20px;
+  border-bottom:1px solid #102a48;
+}
+
+.topWave{
+  height:42px;
+  flex:1;
+  background:#071b32;
+  border-radius:7px;
+  position:relative;
+  overflow:hidden;
+}
+
+.topWave:after{
+  content:"";
+  position:absolute;
+  left:5%;
+  right:5%;
+  top:50%;
+  height:2px;
+  background:#148cff;
+  box-shadow:
+    80px -8px #148cff,
+    160px 5px #148cff,
+    240px -12px #148cff,
+    420px 10px #f33c48,
+    550px -7px #f33c48;
+}
+
+main{
+  padding:10px 16px 80px;
+}
+
+.decks{
+  display:grid;
+  grid-template-columns:1fr 270px 1fr;
+  border:1px solid #12375b;
+  border-radius:12px;
+  overflow:hidden;
+}
+
+.deck{
+  padding:14px;
+  background:linear-gradient(145deg,#061a33,#031125);
+}
+
+.deckA{
+  border-right:1px solid #153a61;
+}
+
+.deckB{
+  border-left:1px solid #153a61;
+}
+
+.deckHead{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:72px;
+}
+
+.deckLetter{
+  font-size:27px;
+  color:#1592ff;
+  border:1px solid #168eff;
+  padding:10px 14px;
+  border-radius:6px;
+}
+
+.deckLetter.red{
+  color:#ff3544;
+  border-color:#ff3544;
+}
+
+.deckHead h2{
+  margin:0;
+  font-size:20px;
+}
+
+.deckHead p{
+  margin:5px 0;
+  color:#7891aa;
+}
+
+.bpm{
+  margin-left:auto;
+  text-align:right;
+}
+
+.bpm b{
+  font-size:20px;
+}
+
+.bpm small,
+.bpm span{
+  display:block;
+  color:#8ba0b7;
+}
+
+.bpm span{
+  color:#168cff;
+}
+
+.wave{
+  width:100%;
+  height:72px;
+  background:#04182e;
+  border:1px solid #123b65;
+  border-radius:5px;
+}
+
+.deckControls{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-top:12px;
+}
+
+.sideControls{
+  width:90px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.sideControls label{
+  font-size:12px;
+  color:#9db0c4;
+  text-align:center;
+}
+
+.row{
+  display:flex;
+  justify-content:center;
+  gap:5px;
+}
+
+.row button{
+  padding:7px;
+}
+
+.cuePad{
+  padding:9px;
+  color:#2e9cff;
+}
+
+.redPad{
+  color:#ff4855;
+}
+
+.turntable{
+  flex:1;
+  text-align:center;
+}
+
+.jog{
+  width:min(270px,25vw);
+  height:min(270px,25vw);
+  min-width:170px;
+  min-height:170px;
+  margin:auto;
+
+  border-radius:50%;
+
+  background:
+    radial-gradient(
+      circle,
+      #111b2a 0 30%,
+      #02060d 31% 55%,
+      #111c2b 56% 75%,
+      #02050b 76%
+    );
+
+  border:5px solid #0f83eb;
+
+  box-shadow:
+    0 0 20px #006cff66,
+    inset 0 0 0 5px #172536;
+
+  display:grid;
+  place-items:center;
+}
+
+.redJog{
+  border-color:#ed3848;
+
+  box-shadow:
+    0 0 20px #ff334466,
+    inset 0 0 0 5px #172536;
+}
+
+.jog .label{
+  font-size:22px;
+  color:#20a0ff;
+}
+
+.redJog .label{
+  color:#ff4b55;
+}
+
+.jog small{
+  font-size:12px;
+}
+
+.pitch{
+  width:80%;
+  margin-top:15px;
+}
+
+.transport{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-top:15px;
+}
+
+.bigBtn,
+.play,
+.sync{
+  height:50px;
+  padding:0 22px;
+}
+
+.play{
+  font-size:23px;
+  color:#16a0ff;
+}
+
+.redPlay{
+  color:#ff3f4d;
+}
+
+.redText{
+  color:#ff3f4d;
+}
+
+.load{
+  margin-left:auto;
+  border:1px solid #17375c;
+  padding:14px;
+  border-radius:6px;
+  cursor:pointer;
+  color:#76a5d2;
+}
+
+.load input{
+  display:none;
+}
+
+.mixer{
+  background:#041326;
+  padding:16px;
+  border-left:1px solid #153a61;
+  border-right:1px solid #153a61;
+}
+
+.tabs{
+  display:flex;
+}
+
+.tabs button{
+  flex:1;
+  padding:13px;
+  border-radius:0;
+}
+
+.tabs .active{
+  color:#36a7ff;
+  border-color:#1d88e8;
+}
+
+.eqs{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  margin-top:20px;
+}
+
+.channel,
+.master{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+
+.channel label,
+.master label,
+.crossLabel{
+  font-size:11px;
+  color:#91a8c0;
+}
+
+.knob,
+.fader{
+  width:100%;
+}
+
+.fader{
+  writing-mode:vertical-lr;
+  direction:rtl;
+  height:180px;
+}
+
+.meters{
+  height:130px;
+  display:flex;
+  gap:7px;
+  align-items:end;
+}
+
+.meters i{
+  display:block;
+  width:10px;
+  height:100px;
+  background:linear-gradient(
+    to top,
+    #0f4,
+    #9e2,
+    #f33
+  );
+}
+
+.cross{
+  width:100%;
+  margin-top:10px;
+}
+
+.bottom{
+  display:grid;
+  grid-template-columns:1fr 2fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+
+.fx,
+.sampler{
+  background:#041326;
+  border:1px solid #12375b;
+  border-radius:10px;
+  padding:12px;
+  text-align:center;
+}
+
+.fx h3,
+.sampler h3{
+  margin:0 0 12px;
+}
+
+.bigKnob{
+  width:130px;
+  height:130px;
+}
+
+.pads{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+
+.pads button{
+  padding:14px;
+  color:#1697ff;
+}
+
+.pads small{
+  color:#9bb0c6;
+}
+
+nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+
+  height:70px;
+
+  background:#020c1d;
+  border-top:1px solid #153655;
+
+  display:flex;
+  justify-content:space-around;
+}
+
+nav button{
+  border:0;
+  background:transparent;
+  border-radius:0;
+  padding:8px 18px;
+  color:#879bb0;
+}
+
+nav button.active{
+  color:#17a0ff;
+}
+
+nav span{
+  display:block;
+  font-size:11px;
+  margin-top:5px;
+}
+
+@media(max-width:900px){
+
+  .decks{
+    grid-template-columns:1fr;
+  }
+
+  .mixer{
+    order:3;
+  }
+
+  .deckA,
+  .deckB{
+    border:0;
+  }
+
+  .bottom{
+    grid-template-columns:1fr;
+  }
+
+  .topWave{
+    display:none;
+  }
+
+  header{
+    gap:6px;
+  }
+
+  .jog{
+    width:190px;
+    height:190px;
+  }
+
+  nav span{
+    font-size:9px;
+  }
+
+  main{
+    padding:6px 7px 78px;
+  }
+}
