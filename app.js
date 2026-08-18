@@ -16,8 +16,7 @@ const state = {
     artist: $("#artistA"),
     wave: $("#waveA"),
     play: $("#playA"),
-    pitch: $("#pitchA"),
-    jog: $("#jogA")
+    pitch: $("#pitchA")
   },
 
   B: {
@@ -26,8 +25,7 @@ const state = {
     artist: $("#artistB"),
     wave: $("#waveB"),
     play: $("#playB"),
-    pitch: $("#pitchB"),
-    jog: $("#jogB")
+    pitch: $("#pitchB")
   }
 
 };
@@ -47,14 +45,8 @@ function setupDeck(id, fileInput) {
 
     if (!file) return;
 
-    // Nettoyage ancienne URL
-    if (deck.audio.dataset.objectUrl) {
-      URL.revokeObjectURL(deck.audio.dataset.objectUrl);
-    }
-
     const url = URL.createObjectURL(file);
 
-    deck.audio.dataset.objectUrl = url;
     deck.audio.src = url;
 
     deck.title.textContent =
@@ -76,9 +68,7 @@ function setupDeck(id, fileInput) {
   });
 
 
-  // ==========================================================
   // PLAY / PAUSE SOURIS
-  // ==========================================================
 
   deck.play.addEventListener("click", async () => {
 
@@ -93,7 +83,7 @@ function setupDeck(id, fileInput) {
       } catch (error) {
 
         console.error(
-          "Impossible de démarrer la musique :",
+          "Erreur lecture :",
           error
         );
 
@@ -110,9 +100,7 @@ function setupDeck(id, fileInput) {
   });
 
 
-  // ==========================================================
   // FIN DE MUSIQUE
-  // ==========================================================
 
   deck.audio.addEventListener("ended", () => {
 
@@ -125,7 +113,8 @@ function setupDeck(id, fileInput) {
 }
 
 
-// Initialisation
+// Initialisation des decks
+
 setupDeck("A", "#fileA");
 setupDeck("B", "#fileB");
 
@@ -180,9 +169,7 @@ function drawWave(canvas, id) {
   );
 
 
-  // ==========================================================
-  // COULEURS
-  // ==========================================================
+  // Couleurs
 
   const color =
     id === "A"
@@ -195,11 +182,10 @@ function drawWave(canvas, id) {
       : "#5c1820";
 
 
-  // ==========================================================
-  // FOND
-  // ==========================================================
+  // Fond
 
-  ctx.fillStyle = "#04182e";
+  ctx.fillStyle =
+    "#04182e";
 
   ctx.fillRect(
     0,
@@ -209,16 +195,17 @@ function drawWave(canvas, id) {
   );
 
 
-  // ==========================================================
-  // CALCUL POSITION
-  // ==========================================================
+  // Position actuelle
 
   const duration =
     audio.duration || 0;
 
   let progress = 0;
 
-  if (duration > 0) {
+  if (
+    duration > 0 &&
+    isFinite(duration)
+  ) {
 
     progress =
       audio.currentTime /
@@ -240,7 +227,7 @@ function drawWave(canvas, id) {
 
 
   // ==========================================================
-  // WAVEFORM
+  // DESSIN DE LA WAVEFORM
   // ==========================================================
 
   ctx.lineWidth = 2;
@@ -267,13 +254,11 @@ function drawWave(canvas, id) {
       Math.sin(x * 0.021) *
       height * 0.10;
 
-
     const amplitude =
       wave1 +
       wave2 +
       wave3 +
       wave4;
-
 
     const y1 =
       height / 2 -
@@ -284,7 +269,6 @@ function drawWave(canvas, id) {
       Math.abs(amplitude);
 
 
-    // Partie déjà jouée
     if (x <= positionX) {
 
       ctx.strokeStyle =
@@ -315,9 +299,7 @@ function drawWave(canvas, id) {
   }
 
 
-  // ==========================================================
-  // LIGNE CENTRALE
-  // ==========================================================
+  // Ligne centrale
 
   ctx.strokeStyle =
     "#284968";
@@ -339,16 +321,14 @@ function drawWave(canvas, id) {
   ctx.stroke();
 
 
-  // ==========================================================
-  // CURSEUR DE POSITION
-  // ==========================================================
+  // Curseur de lecture
 
   if (duration > 0) {
 
     ctx.strokeStyle =
       color;
 
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
 
     ctx.beginPath();
 
@@ -365,7 +345,6 @@ function drawWave(canvas, id) {
     ctx.stroke();
 
 
-    // Petit point
     ctx.fillStyle =
       color;
 
@@ -387,6 +366,7 @@ function drawWave(canvas, id) {
 
 
 // Dessin initial
+
 drawWave(
   $("#waveA"),
   "A"
@@ -399,91 +379,182 @@ drawWave(
 
 
 // ============================================================
-// CLIQUER SUR LA WAVEFORM POUR CHANGER LA POSITION
+// CLIQUER SUR LA WAVEFORM
 // ============================================================
 
-function setupWaveSeek(canvas, audio, id) {
+function seekWave(
+  canvas,
+  audio,
+  id,
+  clientX
+) {
 
-  if (!canvas) return;
+  if (
+    !audio.duration ||
+    !isFinite(audio.duration)
+  ) {
 
-  canvas.style.cursor =
-    "pointer";
+    console.log(
+      `Deck ${id}: aucune musique chargée`
+    );
 
+    return;
 
-  canvas.addEventListener(
-    "click",
-    event => {
-
-      if (!audio.duration) {
-
-        console.log(
-          "Aucune musique chargée."
-        );
-
-        return;
-
-      }
+  }
 
 
-      const rect =
-        canvas.getBoundingClientRect();
+  const rect =
+    canvas.getBoundingClientRect();
 
 
-      const x =
-        event.clientX -
-        rect.left;
+  if (
+    rect.width <= 0
+  ) {
+    return;
+  }
 
 
-      let percentage =
-        x / rect.width;
+  // Position du clic dans le canvas
+
+  let x =
+    clientX -
+    rect.left;
 
 
-      percentage =
-        Math.max(
-          0,
-          Math.min(
-            1,
-            percentage
-          )
-        );
+  // Bloquer entre gauche et droite
+
+  x =
+    Math.max(
+      0,
+      Math.min(
+        rect.width,
+        x
+      )
+    );
 
 
-      audio.currentTime =
-        percentage *
-        audio.duration;
+  // Pourcentage
+
+  const percentage =
+    x / rect.width;
 
 
-      drawWave(
-        canvas,
-        id
-      );
+  // Nouvelle position
+
+  const newTime =
+    percentage *
+    audio.duration;
 
 
-      console.log(
-        `Deck ${id} : ${audio.currentTime.toFixed(2)} secondes`
-      );
+  // Déplacement réel de la musique
 
-    }
+  audio.currentTime =
+    newTime;
+
+
+  // Redessiner immédiatement
+
+  drawWave(
+    canvas,
+    id
+  );
+
+
+  console.log(
+    `🎵 Deck ${id}: ${newTime.toFixed(2)} secondes / ${audio.duration.toFixed(2)} secondes`
   );
 
 }
 
 
-setupWaveSeek(
-  $("#waveA"),
-  audioA,
-  "A"
-);
+// ============================================================
+// WAVEFORM DECK A
+// ============================================================
 
-setupWaveSeek(
-  $("#waveB"),
-  audioB,
-  "B"
+const waveA =
+  $("#waveA");
+
+waveA.style.cursor =
+  "pointer";
+
+
+waveA.addEventListener(
+  "click",
+  event => {
+
+    seekWave(
+      waveA,
+      audioA,
+      "A",
+      event.clientX
+    );
+
+  }
 );
 
 
 // ============================================================
-// SUIVI DE LA MUSIQUE
+// WAVEFORM DECK B
+// ============================================================
+
+const waveB =
+  $("#waveB");
+
+waveB.style.cursor =
+  "pointer";
+
+
+waveB.addEventListener(
+  "click",
+  event => {
+
+    seekWave(
+      waveB,
+      audioB,
+      "B",
+      event.clientX
+    );
+
+  }
+);
+
+
+// ============================================================
+// TOUCHER LA WAVEFORM SUR TÉLÉPHONE
+// ============================================================
+
+waveA.addEventListener(
+  "pointerdown",
+  event => {
+
+    seekWave(
+      waveA,
+      audioA,
+      "A",
+      event.clientX
+    );
+
+  }
+);
+
+
+waveB.addEventListener(
+  "pointerdown",
+  event => {
+
+    seekWave(
+      waveB,
+      audioB,
+      "B",
+      event.clientX
+    );
+
+  }
+);
+
+
+// ============================================================
+// SUIVI DE LA POSITION DE LECTURE
 // ============================================================
 
 audioA.addEventListener(
@@ -491,7 +562,7 @@ audioA.addEventListener(
   () => {
 
     drawWave(
-      $("#waveA"),
+      waveA,
       "A"
     );
 
@@ -504,7 +575,7 @@ audioB.addEventListener(
   () => {
 
     drawWave(
-      $("#waveB"),
+      waveB,
       "B"
     );
 
@@ -513,7 +584,7 @@ audioB.addEventListener(
 
 
 // ============================================================
-// REDESSIN AU REDIMENSIONNEMENT
+// REDESSINER SI LA FENÊTRE CHANGE
 // ============================================================
 
 window.addEventListener(
@@ -521,12 +592,12 @@ window.addEventListener(
   () => {
 
     drawWave(
-      $("#waveA"),
+      waveA,
       "A"
     );
 
     drawWave(
-      $("#waveB"),
+      waveB,
       "B"
     );
 
@@ -642,26 +713,25 @@ $("#pitchB").addEventListener(
 // JOG WHEELS
 // ============================================================
 
-function setupJog(id, audio) {
+function setupJog(
+  selector,
+  audio
+) {
 
   const jog =
-    $(id);
+    $(selector);
 
   if (!jog) return;
 
-  let touching =
-    false;
-
-  let lastX =
-    0;
+  let touching = false;
+  let lastX = 0;
 
 
   jog.addEventListener(
     "pointerdown",
     event => {
 
-      touching =
-        true;
+      touching = true;
 
       lastX =
         event.clientX;
@@ -676,10 +746,17 @@ function setupJog(id, audio) {
 
   jog.addEventListener(
     "pointerup",
-    () => {
+    event => {
 
-      touching =
-        false;
+      touching = false;
+
+      try {
+
+        jog.releasePointerCapture(
+          event.pointerId
+        );
+
+      } catch (error) {}
 
     }
   );
@@ -689,8 +766,7 @@ function setupJog(id, audio) {
     "pointercancel",
     () => {
 
-      touching =
-        false;
+      touching = false;
 
     }
   );
@@ -710,13 +786,10 @@ function setupJog(id, audio) {
         event.clientX;
 
 
-      if (
-        !audio.duration
-      ) return;
+      if (!audio.duration)
+        return;
 
 
-      // Avance même si la musique
-      // est en pause
       audio.currentTime =
         Math.max(
           0,
@@ -748,10 +821,15 @@ setupJog(
 // CUE
 // ============================================================
 
-function setupCue(buttonId, audio) {
+function setupCue(
+  selector,
+  audio,
+  wave,
+  id
+) {
 
   const button =
-    $(buttonId);
+    $(selector);
 
   if (!button) return;
 
@@ -767,12 +845,8 @@ function setupCue(buttonId, audio) {
       audio.currentTime = 0;
 
       drawWave(
-        audio === audioA
-          ? $("#waveA")
-          : $("#waveB"),
-        audio === audioA
-          ? "A"
-          : "B"
+        wave,
+        id
       );
 
     }
@@ -783,12 +857,16 @@ function setupCue(buttonId, audio) {
 
 setupCue(
   "#cueA",
-  audioA
+  audioA,
+  waveA,
+  "A"
 );
 
 setupCue(
   "#cueB",
-  audioB
+  audioB,
+  waveB,
+  "B"
 );
 
 
@@ -816,13 +894,13 @@ $("#recordBtn")
 let midiAccess = null;
 
 
-// ------------------------------------------------------------
-// DEMANDE D'ACCÈS MIDI
-// ------------------------------------------------------------
+// Connexion MIDI
 
 async function connectMIDI() {
 
-  if (!navigator.requestMIDIAccess) {
+  if (
+    !navigator.requestMIDIAccess
+  ) {
 
     alert(
       "Le MIDI Web n'est pas disponible dans ce navigateur."
@@ -850,13 +928,8 @@ async function connectMIDI() {
   } catch (error) {
 
     console.error(
-      "Erreur MIDI :",
+      "Erreur MIDI:",
       error
-    );
-
-
-    alert(
-      "Impossible d'obtenir l'accès MIDI."
     );
 
   }
@@ -864,13 +937,14 @@ async function connectMIDI() {
 }
 
 
-// ------------------------------------------------------------
-// CONNEXION DES ENTRÉES
-// ------------------------------------------------------------
+// ============================================================
+// CONNECTER LES ENTRÉES MIDI
+// ============================================================
 
 function connectMIDIInputs() {
 
-  if (!midiAccess) return;
+  if (!midiAccess)
+    return;
 
 
   const inputs =
@@ -878,27 +952,16 @@ function connectMIDIInputs() {
 
 
   console.log(
-    "🎹 Entrées MIDI :",
+    "🎹 Entrées MIDI:",
     inputs
   );
-
-
-  if (!inputs.length) {
-
-    console.log(
-      "🎹 Aucun contrôleur MIDI."
-    );
-
-    return;
-
-  }
 
 
   inputs.forEach(
     input => {
 
       console.log(
-        "🎧 Contrôleur détecté :",
+        "🎧 Contrôleur:",
         input.name
       );
 
@@ -912,9 +975,9 @@ function connectMIDIInputs() {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // BOUTON MIDI
-// ------------------------------------------------------------
+// ============================================================
 
 $("#midiBtn")
   .addEventListener(
@@ -935,7 +998,7 @@ $("#midiBtn")
       if (inputs.length) {
 
         alert(
-          "DJ2GO2 / contrôleur MIDI détecté :\n\n" +
+          "Contrôleur MIDI détecté:\n\n" +
           inputs
             .map(
               input =>
@@ -958,48 +1021,49 @@ $("#midiBtn")
 
 
 // ============================================================
-// TRAITEMENT MIDI
+// MESSAGE MIDI
 // ============================================================
 
-function handleMIDIMessage(event) {
+function handleMIDIMessage(
+  event
+) {
 
   const data =
     event.data;
 
 
-  if (!data || data.length < 3)
+  if (
+    !data ||
+    data.length < 3
+  ) {
     return;
+  }
 
 
   const status =
     data[0];
 
-
   const command =
     status & 0xF0;
-
 
   const channel =
     (status & 0x0F) + 1;
 
-
   const note =
     data[1];
-
 
   const velocity =
     data[2];
 
 
-  // ----------------------------------------------------------
+  let pressed = false;
+
+
   // NOTE ON
-  // ----------------------------------------------------------
 
-  let pressed =
-    false;
-
-
-  if (command === 0x90) {
+  if (
+    command === 0x90
+  ) {
 
     pressed =
       velocity > 0;
@@ -1007,21 +1071,19 @@ function handleMIDIMessage(event) {
   }
 
 
-  // ----------------------------------------------------------
   // NOTE OFF
-  // ----------------------------------------------------------
 
-  else if (command === 0x80) {
+  else if (
+    command === 0x80
+  ) {
 
-    pressed =
-      false;
+    pressed = false;
 
   }
 
 
   else {
 
-    // Autres messages MIDI
     return;
 
   }
@@ -1033,8 +1095,7 @@ function handleMIDIMessage(event) {
       status,
       type:
         "0x" +
-        command
-          .toString(16),
+        command.toString(16),
       channel,
       note,
       velocity,
@@ -1054,7 +1115,7 @@ function handleMIDIMessage(event) {
 
 
 // ============================================================
-// MAPPING MIDI
+// MAPPING DJ2GO2
 // ============================================================
 
 function handleMIDINote(
@@ -1065,11 +1126,11 @@ function handleMIDINote(
 ) {
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // DECK A
-  // Canal MIDI 1
+  // Canal 1
   // PLAY = NOTE 0
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     channel === 1 &&
@@ -1077,7 +1138,7 @@ function handleMIDINote(
   ) {
 
     console.log(
-      "🎵 PLAY A",
+      "🎵 PLAY A:",
       pressed
     );
 
@@ -1095,11 +1156,11 @@ function handleMIDINote(
   }
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // DECK B
-  // Canal MIDI 2
+  // Canal 2
   // PLAY = NOTE 0
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     channel === 2 &&
@@ -1107,7 +1168,7 @@ function handleMIDINote(
   ) {
 
     console.log(
-      "🎵 PLAY B",
+      "🎵 PLAY B:",
       pressed
     );
 
@@ -1125,9 +1186,9 @@ function handleMIDINote(
   }
 
 
-  // ==========================================================
-  // AUTRES TOUCHES
-  // ==========================================================
+  // ----------------------------------------------------------
+  // AUTRES NOTES
+  // ----------------------------------------------------------
 
   console.log(
     "🎹 NOTE NON MAPPÉE",
@@ -1159,7 +1220,7 @@ async function toggleDeckPlay(id) {
   if (!deck.audio.src) {
 
     console.log(
-      `Deck ${id} : aucune musique chargée`
+      `Deck ${id}: aucune musique chargée`
     );
 
     return;
@@ -1178,13 +1239,13 @@ async function toggleDeckPlay(id) {
 
 
       console.log(
-        `▶ Deck ${id}`
+        `▶ PLAY DECK ${id}`
       );
 
     } catch (error) {
 
       console.error(
-        `Erreur lecture Deck ${id}:`,
+        `Erreur PLAY ${id}:`,
         error
       );
 
@@ -1199,7 +1260,7 @@ async function toggleDeckPlay(id) {
 
 
     console.log(
-      `⏸ Deck ${id}`
+      `⏸ PAUSE DECK ${id}`
     );
 
   }
@@ -1208,7 +1269,7 @@ async function toggleDeckPlay(id) {
 
 
 // ============================================================
-// RECONNEXION SI LE CONTRÔLEUR MIDI EST BRANCHÉ
+// DÉTECTION AUTOMATIQUE DU DJ2GO2
 // ============================================================
 
 if (
@@ -1223,17 +1284,17 @@ if (
         midiAccess =
           access;
 
+
         connectMIDIInputs();
 
 
-        // Si le DJ2GO2 est branché après
-        // le chargement de la page
         midiAccess.onstatechange =
           () => {
 
             console.log(
               "🎹 Changement périphérique MIDI"
             );
+
 
             connectMIDIInputs();
 
@@ -1245,7 +1306,7 @@ if (
       error => {
 
         console.log(
-          "MIDI non disponible automatiquement.",
+          "MIDI non disponible:",
           error
         );
 
@@ -1322,13 +1383,17 @@ updateClock();
 
 
 // ============================================================
-// FIN
+// DÉMARRAGE
 // ============================================================
 
 console.log(
-  "🎧 BlueMix DJ chargé."
+  "🎧 BlueMix DJ prêt"
 );
 
 console.log(
-  "🎹 MIDI prêt."
+  "🎹 MIDI prêt"
+);
+
+console.log(
+  "🎵 Waveform interactive prête"
 );
