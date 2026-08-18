@@ -1,80 +1,78 @@
-Readme.md
-
-
 # BlueMix DJ 🎧
 
-Application DJ gratuite avec interface bleu foncé.
+BlueMix DJ est une application DJ gratuite avec une interface sombre bleu/rouge.
 
-## Fonctionnalités actuelles
+L'objectif du projet est de permettre de mixer deux morceaux avec une interface DJ dans un navigateur et, lorsque le périphérique est compatible, avec une véritable planche DJ MIDI.
 
-- Deux platines DJ
-- Deck A
-- Deck B
+---
+
+## Fonctionnalités
+
+### Deck A
+
 - Chargement de fichiers audio
 - Play / Pause
 - CUE
 - Pitch
-- Crossfader
-- Volume indépendant
-- Jog wheels
-- Waveforms
-- Hot Cues
+- Jog wheel
+- Hot Cues 1 à 4
 - Loop
-- Sampler
-- FX
-- Détection MIDI
-- Interface responsive pour téléphone
+- Waveform
+- SYNC
 
-## Installation
+### Deck B
 
-Créer un dossier appelé :
+- Chargement de fichiers audio
+- Play / Pause
+- CUE
+- Pitch
+- Jog wheel
+- Hot Cues 1 à 4
+- Loop
+- Waveform
+- SYNC
 
+### Mixer
+
+- Volume Deck A
+- Volume Deck B
+- Crossfader
+- Master
+- Headphones
+- EQ High
+- EQ Mid
+- EQ Low
+
+### FX
+
+- Filter
+- Echo
+
+### Sampler
+
+- 8 pads
+
+### MIDI
+
+BlueMix DJ possède un moteur MIDI permettant :
+
+- Détection des périphériques MIDI
+- Réception des messages MIDI
+- Affichage des messages MIDI
+- MIDI Learn
+- Sauvegarde du mapping MIDI
+- Contrôle de PLAY
+- Contrôle de CUE
+- Contrôle du volume
+- Contrôle du crossfader
+- Contrôle du pitch
+- Contrôle des Hot Cues
+
+---
+
+# Installation
+
+Créer un dossier :
+
+```text
 BlueMixDJ
-
-Puis mettre dedans :
-
-index.html
-style.css
-app.js
-README.md
-
-## Lancer
-
-Ouvrir :
-
-index.html
-
-avec un navigateur.
-
-## Utilisation
-
-Sur Deck A :
-
-1. Cliquer sur "Charger"
-2. Choisir une musique
-3. Appuyer sur ▶
-
-Faire la même chose sur Deck B.
-
-Le crossfader permet de passer progressivement
-d'une platine à l'autre.
-
-## Contrôleur DJ
-
-La prochaine étape consiste à connecter une vraie
-planche DJ au téléphone avec USB OTG/MIDI.
-
-La version actuelle possède déjà une base pour
-détecter les contrôleurs MIDI compatibles.
-
-## Projet
-
-Nom :
-
-BlueMix DJ
-
-Objectif :
-
-Créer une application DJ gratuite permettant
-de mixer avec une vraie table DJ directement
-depuis un téléphone Android.
