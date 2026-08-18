@@ -1,5 +1,6 @@
 // ============================================================
 // BLUEMIX DJ - APP.JS
+// Waveform réelle + Playhead + MIDI Numark DJ2GO2
 // ============================================================
 
 const $ = selector => document.querySelector(selector);
@@ -11,6 +12,35 @@ const $ = selector => document.querySelector(selector);
 
 const audioA = $("#audioA");
 const audioB = $("#audioB");
+
+
+// ============================================================
+// WEB AUDIO
+// Utilisé uniquement pour analyser les fichiers
+// ============================================================
+
+let waveformAudioContext = null;
+
+function getAudioContext() {
+
+  if (!waveformAudioContext) {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    if (!AudioContext) {
+      return null;
+    }
+
+    waveformAudioContext =
+      new AudioContext();
+
+  }
+
+  return waveformAudioContext;
+
+}
 
 
 // ============================================================
@@ -26,7 +56,11 @@ const state = {
     wave: $("#waveA"),
     play: $("#playA"),
     cue: $("#cueA"),
-    cuePosition: 0
+    cuePosition: 0,
+    waveform: null,
+    duration: 0,
+    color: "#1598ff",
+    glow: "#42b5ff"
   },
 
   B: {
@@ -36,71 +70,132 @@ const state = {
     wave: $("#waveB"),
     play: $("#playB"),
     cue: $("#cueB"),
-    cuePosition: 0
+    cuePosition: 0,
+    waveform: null,
+    duration: 0,
+    color: "#ff3e4d",
+    glow: "#ff6b76"
   }
 
 };
 
 
 // ============================================================
-// CHARGEMENT DES MUSIQUES
+// CHARGEMENT DU FICHIER AUDIO
 // ============================================================
 
 function setupDeck(id, fileSelector) {
 
-  const input = $(fileSelector);
+  const input =
+    $(fileSelector);
 
   if (!input) return;
 
-  input.addEventListener("change", event => {
 
-    const file = event.target.files[0];
+  input.addEventListener(
+    "change",
+    async event => {
 
-    if (!file) return;
+      const file =
+        event.target.files[0];
 
-    const deck = state[id];
+      if (!file) return;
 
-    // Nettoyer l'ancien fichier
-    if (deck.objectURL) {
 
-      URL.revokeObjectURL(
-        deck.objectURL
+      const deck =
+        state[id];
+
+
+      // --------------------------------------------------------
+      // Ancien Object URL
+      // --------------------------------------------------------
+
+      if (deck.objectURL) {
+
+        URL.revokeObjectURL(
+          deck.objectURL
+        );
+
+      }
+
+
+      // --------------------------------------------------------
+      // Nouveau fichier
+      // --------------------------------------------------------
+
+      deck.objectURL =
+        URL.createObjectURL(file);
+
+
+      deck.audio.src =
+        deck.objectURL;
+
+      deck.audio.load();
+
+
+      deck.title.textContent =
+        file.name.replace(
+          /\.[^/.]+$/,
+          ""
+        );
+
+      deck.artist.textContent =
+        "Analyse de la waveform...";
+
+
+      deck.waveform =
+        null;
+
+      deck.duration =
+        0;
+
+      deck.cuePosition =
+        0;
+
+
+      // --------------------------------------------------------
+      // Waveform réelle
+      // --------------------------------------------------------
+
+      try {
+
+        await createRealWaveform(
+          deck,
+          file
+        );
+
+        deck.artist.textContent =
+          "Fichier local";
+
+        console.log(
+          "🎵 Waveform créée pour Deck " +
+          id
+        );
+
+      } catch (error) {
+
+        console.error(
+          "❌ Erreur waveform",
+          error
+        );
+
+        deck.artist.textContent =
+          "Fichier local";
+
+        drawFallbackWave(
+          deck.wave,
+          id
+        );
+
+      }
+
+
+      drawDeckWaveform(
+        deck
       );
 
     }
-
-    // Créer l'URL du nouveau fichier
-    deck.objectURL =
-      URL.createObjectURL(file);
-
-    deck.audio.src =
-      deck.objectURL;
-
-    deck.title.textContent =
-      file.name.replace(
-        /\.[^/.]+$/,
-        ""
-      );
-
-    deck.artist.textContent =
-      "Fichier local";
-
-    deck.cuePosition = 0;
-
-    deck.audio.load();
-
-    drawWave(
-      deck.wave,
-      id
-    );
-
-    console.log(
-      "🎵 Deck " + id +
-      " chargé : " +
-      file.name
-    );
-
-  });
+  );
 
 
   // ==========================================================
@@ -124,235 +219,177 @@ function setupDeck(id, fileSelector) {
 
 
 // ============================================================
-// PLAY / PAUSE
+// CRÉATION DE LA VRAIE WAVEFORM
 // ============================================================
 
-function togglePlay(id) {
+async function createRealWaveform(
+  deck,
+  file
+) {
 
-  const deck =
-    state[id];
+  const context =
+    getAudioContext();
 
+  if (!context) {
 
-  if (!deck.audio.src) {
-
-    console.log(
-      "⚠️ Aucun morceau chargé sur Deck " +
-      id
+    throw new Error(
+      "Web Audio API non disponible"
     );
-
-    showMIDIStatus(
-      "⚠️ Charge un morceau sur Deck " + id,
-      "#ff4050"
-    );
-
-    return;
 
   }
 
 
-  // ==========================================================
-  // PAUSE
-  // ==========================================================
+  const arrayBuffer =
+    await file.arrayBuffer();
 
-  if (!deck.audio.paused) {
 
-    deck.audio.pause();
-
-    deck.play.textContent =
-      "▶";
-
-    console.log(
-      "⏸ PAUSE Deck " + id
+  const audioBuffer =
+    await context.decodeAudioData(
+      arrayBuffer
     );
 
-    return;
 
-  }
-
-
-  // ==========================================================
-  // PLAY
-  // ==========================================================
-
-  console.log(
-    "▶ PLAY Deck " + id
-  );
+  deck.duration =
+    audioBuffer.duration;
 
 
-  const promise =
-    deck.audio.play();
+  // Nombre de points de waveform.
+  // Plus grand = plus détaillé.
+  const points =
+    1600;
 
 
-  if (
-    promise &&
-    typeof promise.then === "function"
+  const data =
+    new Float32Array(points);
+
+
+  const channels =
+    audioBuffer.numberOfChannels;
+
+
+  const length =
+    audioBuffer.length;
+
+
+  // ----------------------------------------------------------
+  // Analyse du son
+  // ----------------------------------------------------------
+
+  for (
+    let i = 0;
+    i < points;
+    i++
   ) {
 
-    promise
-      .then(() => {
+    const start =
+      Math.floor(
+        i * length / points
+      );
 
-        deck.play.textContent =
-          "❚❚";
+    const end =
+      Math.floor(
+        (i + 1) * length / points
+      );
 
-        console.log(
-          "🔊 AUDIO Deck " +
-          id +
-          " EN LECTURE"
+
+    let maximum =
+      0;
+
+
+    for (
+      let sample = start;
+      sample < end;
+      sample++
+    ) {
+
+      let value =
+        0;
+
+
+      // Moyenne des canaux gauche/droit
+      for (
+        let channel = 0;
+        channel < channels;
+        channel++
+      ) {
+
+        value += Math.abs(
+          audioBuffer
+            .getChannelData(channel)
+            [sample]
         );
 
-      })
-      .catch(error => {
-
-        deck.play.textContent =
-          "▶";
-
-        console.error(
-          "❌ Erreur audio Deck " +
-          id,
-          error
-        );
-
-        if (
-          error.name ===
-          "NotAllowedError"
-        ) {
-
-          showMIDIStatus(
-            "👆 Clique d'abord sur ▶ avec la souris",
-            "#ff4050"
-          );
-
-        }
-
-      });
-
-  }
-
-}
+      }
 
 
-// ============================================================
-// INITIALISATION
-// ============================================================
-
-setupDeck(
-  "A",
-  "#fileA"
-);
-
-setupDeck(
-  "B",
-  "#fileB"
-);
+      value /=
+        channels;
 
 
-// ============================================================
-// FIN DU MORCEAU
-// ============================================================
+      if (
+        value > maximum
+      ) {
 
-audioA.addEventListener(
-  "ended",
-  () => {
+        maximum =
+          value;
 
-    $("#playA").textContent =
-      "▶";
-
-  }
-);
-
-
-audioB.addEventListener(
-  "ended",
-  () => {
-
-    $("#playB").textContent =
-      "▶";
-
-  }
-);
-
-
-// ============================================================
-// CUE
-// ============================================================
-
-function triggerCue(id) {
-
-  const deck =
-    state[id];
-
-  if (!deck.audio.src) {
-    return;
-  }
-
-  deck.audio.currentTime =
-    deck.cuePosition || 0;
-
-  deck.audio.pause();
-
-  deck.play.textContent =
-    "▶";
-
-  console.log(
-    "🎯 CUE Deck " + id
-  );
-
-}
-
-
-if ($("#cueA")) {
-
-  $("#cueA").addEventListener(
-    "click",
-    () => {
-
-      triggerCue("A");
+      }
 
     }
-  );
-
-}
 
 
-if ($("#cueB")) {
+    // Petite amplification visuelle
+    data[i] =
+      Math.min(
+        1,
+        maximum * 1.8
+      );
 
-  $("#cueB").addEventListener(
-    "click",
-    () => {
+  }
 
-      triggerCue("B");
 
-    }
-  );
+  deck.waveform =
+    data;
 
 }
 
 
 // ============================================================
-// WAVEFORMS
+// WAVEFORM DE SECOURS
 // ============================================================
 
-function drawWave(canvas, id) {
+function drawFallbackWave(
+  canvas,
+  id
+) {
 
   if (!canvas) return;
 
-  const ctx =
-    canvas.getContext("2d");
 
   const ratio =
     window.devicePixelRatio || 1;
 
+
   const width =
-    canvas.clientWidth * ratio;
+    canvas.clientWidth *
+    ratio;
+
 
   const height =
-    canvas.clientHeight * ratio;
+    canvas.clientHeight *
+    ratio;
+
 
   canvas.width =
     width;
 
   canvas.height =
     height;
+
+
+  const ctx =
+    canvas.getContext("2d");
+
 
   ctx.clearRect(
     0,
@@ -361,15 +398,22 @@ function drawWave(canvas, id) {
     height
   );
 
-  ctx.strokeStyle =
+
+  const color =
     id === "A"
       ? "#1598ff"
       : "#ff3e4d";
 
+
+  ctx.strokeStyle =
+    color;
+
   ctx.lineWidth =
     2 * ratio;
 
+
   ctx.beginPath();
+
 
   for (
     let x = 0;
@@ -392,6 +436,7 @@ function drawWave(canvas, id) {
       height *
       0.18;
 
+
     if (x === 0) {
 
       ctx.moveTo(
@@ -410,37 +455,664 @@ function drawWave(canvas, id) {
 
   }
 
+
   ctx.stroke();
 
 }
 
 
-drawWave(
-  $("#waveA"),
-  "A"
-);
+// ============================================================
+// DESSIN WAVEFORM
+// ============================================================
 
-drawWave(
-  $("#waveB"),
-  "B"
-);
+function drawDeckWaveform(
+  deck
+) {
+
+  const canvas =
+    deck.wave;
+
+  if (!canvas) return;
 
 
-window.addEventListener(
-  "resize",
-  () => {
+  const ratio =
+    window.devicePixelRatio || 1;
 
-    drawWave(
-      $("#waveA"),
-      "A"
+
+  const width =
+    canvas.clientWidth *
+    ratio;
+
+
+  const height =
+    canvas.clientHeight *
+    ratio;
+
+
+  if (
+    width <= 0 ||
+    height <= 0
+  ) {
+
+    return;
+
+  }
+
+
+  canvas.width =
+    width;
+
+  canvas.height =
+    height;
+
+
+  const ctx =
+    canvas.getContext("2d");
+
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  // ----------------------------------------------------------
+  // Fond
+  // ----------------------------------------------------------
+
+  const background =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      height
     );
 
-    drawWave(
-      $("#waveB"),
-      "B"
+
+  background.addColorStop(
+    0,
+    "#031225"
+  );
+
+  background.addColorStop(
+    0.5,
+    "#061c35"
+  );
+
+  background.addColorStop(
+    1,
+    "#031225"
+  );
+
+
+  ctx.fillStyle =
+    background;
+
+
+  ctx.fillRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  // ----------------------------------------------------------
+  // Ligne centrale
+  // ----------------------------------------------------------
+
+  ctx.strokeStyle =
+    "#ffffff18";
+
+  ctx.lineWidth =
+    ratio;
+
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    height / 2
+  );
+
+  ctx.lineTo(
+    width,
+    height / 2
+  );
+
+  ctx.stroke();
+
+
+  // ----------------------------------------------------------
+  // Pas encore de waveform
+  // ----------------------------------------------------------
+
+  if (
+    !deck.waveform ||
+    deck.waveform.length === 0
+  ) {
+
+    drawFallbackWave(
+      canvas,
+      deck === state.A
+        ? "A"
+        : "B"
+    );
+
+    return;
+
+  }
+
+
+  const waveform =
+    deck.waveform;
+
+
+  const center =
+    height / 2;
+
+
+  const maxHeight =
+    height * 0.44;
+
+
+  const barWidth =
+    width / waveform.length;
+
+
+  // ----------------------------------------------------------
+  // Waveform
+  // ----------------------------------------------------------
+
+  for (
+    let i = 0;
+    i < waveform.length;
+    i++
+  ) {
+
+    const amplitude =
+      waveform[i];
+
+
+    const barHeight =
+      Math.max(
+        2 * ratio,
+        amplitude * maxHeight
+      );
+
+
+    const x =
+      i * barWidth;
+
+
+    // --------------------------------------------------------
+    // Couleur selon l'intensité
+    // --------------------------------------------------------
+
+    let color;
+
+
+    if (
+      amplitude > 0.75
+    ) {
+
+      color =
+        "#ffffff";
+
+    } else if (
+      amplitude > 0.50
+    ) {
+
+      color =
+        deck.color;
+
+    } else if (
+      amplitude > 0.25
+    ) {
+
+      color =
+        deck.glow;
+
+    } else {
+
+      color =
+        deck.color + "88";
+
+    }
+
+
+    ctx.fillStyle =
+      color;
+
+
+    // Partie supérieure
+    ctx.fillRect(
+      x,
+      center - barHeight,
+      Math.max(
+        1,
+        barWidth - ratio
+      ),
+      barHeight
+    );
+
+
+    // Partie inférieure
+    ctx.fillRect(
+      x,
+      center,
+      Math.max(
+        1,
+        barWidth - ratio
+      ),
+      barHeight
     );
 
   }
+
+
+  // ----------------------------------------------------------
+  // Progression actuelle
+  // ----------------------------------------------------------
+
+  drawPlayhead(
+    deck
+  );
+
+}
+
+
+// ============================================================
+// PLAYHEAD
+// Ligne verticale indiquant où est rendu le morceau
+// ============================================================
+
+function drawPlayhead(
+  deck
+) {
+
+  const canvas =
+    deck.wave;
+
+
+  if (!canvas) return;
+
+
+  if (
+    !deck.duration ||
+    deck.duration <= 0
+  ) {
+
+    return;
+
+  }
+
+
+  const ratio =
+    window.devicePixelRatio || 1;
+
+
+  const width =
+    canvas.width;
+
+
+  const height =
+    canvas.height;
+
+
+  const progress =
+    Math.max(
+      0,
+      Math.min(
+        1,
+        deck.audio.currentTime /
+        deck.duration
+      )
+    );
+
+
+  const x =
+    progress * width;
+
+
+  const ctx =
+    canvas.getContext("2d");
+
+
+  // ----------------------------------------------------------
+  // Zone déjà jouée
+  // ----------------------------------------------------------
+
+  ctx.save();
+
+
+  ctx.globalCompositeOperation =
+    "source-atop";
+
+
+  const played =
+    ctx.createLinearGradient(
+      0,
+      0,
+      width,
+      0
+    );
+
+
+  played.addColorStop(
+    0,
+    deck.color + "55"
+  );
+
+  played.addColorStop(
+    Math.max(
+      0.001,
+      progress
+    ),
+    deck.color + "cc"
+  );
+
+  played.addColorStop(
+    Math.min(
+      1,
+      progress + 0.001
+    ),
+    deck.color + "22"
+  );
+
+
+  ctx.fillStyle =
+    played;
+
+
+  ctx.fillRect(
+    0,
+    0,
+    x,
+    height
+  );
+
+
+  ctx.restore();
+
+
+  // ----------------------------------------------------------
+  // Ligne PLAYHEAD
+  // ----------------------------------------------------------
+
+  ctx.save();
+
+
+  ctx.shadowColor =
+    deck.color;
+
+
+  ctx.shadowBlur =
+    10 * ratio;
+
+
+  ctx.strokeStyle =
+    "#ffffff";
+
+
+  ctx.lineWidth =
+    2 * ratio;
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    x,
+    0
+  );
+
+  ctx.lineTo(
+    x,
+    height
+  );
+
+
+  ctx.stroke();
+
+
+  ctx.restore();
+
+
+  // ----------------------------------------------------------
+  // Petit triangle en haut
+  // ----------------------------------------------------------
+
+  ctx.fillStyle =
+    deck.color;
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    x - 6 * ratio,
+    0
+  );
+
+  ctx.lineTo(
+    x + 6 * ratio,
+    0
+  );
+
+  ctx.lineTo(
+    x,
+    8 * ratio
+  );
+
+
+  ctx.closePath();
+
+  ctx.fill();
+
+}
+
+
+// ============================================================
+// ANIMATION DES WAVEFORMS
+// ============================================================
+
+function animateWaveforms() {
+
+  drawDeckWaveform(
+    state.A
+  );
+
+  drawDeckWaveform(
+    state.B
+  );
+
+
+  requestAnimationFrame(
+    animateWaveforms
+  );
+
+}
+
+
+requestAnimationFrame(
+  animateWaveforms
+);
+
+
+// ============================================================
+// PLAY / PAUSE
+// ============================================================
+
+function togglePlay(id) {
+
+  const deck =
+    state[id];
+
+
+  if (!deck.audio.src) {
+
+    console.log(
+      "⚠️ Aucun morceau chargé sur Deck " +
+      id
+    );
+
+
+    showMIDIStatus(
+      "⚠️ Charge un morceau sur Deck " +
+      id,
+      "#ff4050"
+    );
+
+
+    return;
+
+  }
+
+
+  // ----------------------------------------------------------
+  // PAUSE
+  // ----------------------------------------------------------
+
+  if (
+    !deck.audio.paused
+  ) {
+
+    deck.audio.pause();
+
+    deck.play.textContent =
+      "▶";
+
+
+    console.log(
+      "⏸ PAUSE Deck " +
+      id
+    );
+
+
+    return;
+
+  }
+
+
+  // ----------------------------------------------------------
+  // PLAY
+  // ----------------------------------------------------------
+
+  console.log(
+    "▶ PLAY Deck " +
+    id
+  );
+
+
+  const promise =
+    deck.audio.play();
+
+
+  if (
+    promise &&
+    typeof promise.then ===
+    "function"
+  ) {
+
+    promise
+      .then(
+        () => {
+
+          deck.play.textContent =
+            "❚❚";
+
+
+          console.log(
+            "🔊 AUDIO Deck " +
+            id +
+            " EN LECTURE"
+          );
+
+        }
+      )
+      .catch(
+        error => {
+
+          deck.play.textContent =
+            "▶";
+
+
+          console.error(
+            "❌ Erreur audio Deck " +
+            id,
+            error
+          );
+
+
+          if (
+            error.name ===
+            "NotAllowedError"
+          ) {
+
+            showMIDIStatus(
+              "👆 Clique d'abord sur ▶ avec la souris",
+              "#ff4050"
+            );
+
+          }
+
+        }
+      );
+
+  }
+
+}
+
+
+// ============================================================
+// FIN DES MORCEAUX
+// ============================================================
+
+audioA.addEventListener(
+  "ended",
+  () => {
+
+    $("#playA").textContent =
+      "▶";
+
+    drawDeckWaveform(
+      state.A
+    );
+
+  }
+);
+
+
+audioB.addEventListener(
+  "ended",
+  () => {
+
+    $("#playB").textContent =
+      "▶";
+
+    drawDeckWaveform(
+      state.B
+    );
+
+  }
+);
+
+
+// ============================================================
+// INITIALISATION DES DECKS
+// ============================================================
+
+setupDeck(
+  "A",
+  "#fileA"
+);
+
+setupDeck(
+  "B",
+  "#fileB"
 );
 
 
@@ -459,6 +1131,7 @@ function updateMix() {
   const volB =
     $("#volB");
 
+
   if (
     !cross ||
     !volA ||
@@ -469,10 +1142,12 @@ function updateMix() {
 
   }
 
+
   const value =
     Number(
       cross.value
     );
+
 
   const volumeA =
     Math.max(
@@ -483,6 +1158,7 @@ function updateMix() {
       )
     );
 
+
   const volumeB =
     Math.max(
       0,
@@ -492,11 +1168,13 @@ function updateMix() {
       )
     );
 
+
   audioA.volume =
     volumeA *
     Number(
       volA.value
     );
+
 
   audioB.volume =
     volumeB *
@@ -544,7 +1222,7 @@ updateMix();
 
 
 // ============================================================
-// PITCH DECK A
+// PITCH A
 // ============================================================
 
 if ($("#pitchA")) {
@@ -567,7 +1245,7 @@ if ($("#pitchA")) {
 
 
 // ============================================================
-// PITCH DECK B
+// PITCH B
 // ============================================================
 
 if ($("#pitchB")) {
@@ -590,7 +1268,7 @@ if ($("#pitchB")) {
 
 
 // ============================================================
-// JOG WHEELS
+// JOG WHEELS SOURIS
 // ============================================================
 
 function setupJog(
@@ -601,10 +1279,13 @@ function setupJog(
   const jog =
     $(selector);
 
+
   if (!jog) return;
+
 
   let touching =
     false;
+
 
   let lastX =
     0;
@@ -617,8 +1298,10 @@ function setupJog(
       touching =
         true;
 
+
       lastX =
         event.clientX;
+
 
       jog.setPointerCapture(
         event.pointerId
@@ -656,14 +1339,24 @@ function setupJog(
 
       if (!touching) return;
 
+
       const movement =
         event.clientX -
         lastX;
 
+
       lastX =
         event.clientX;
 
-      if (audio.paused) return;
+
+      if (
+        audio.paused
+      ) {
+
+        return;
+
+      }
+
 
       audio.currentTime =
         Math.max(
@@ -683,10 +1376,79 @@ setupJog(
   audioA
 );
 
+
 setupJog(
   "#jogB",
   audioB
 );
+
+
+// ============================================================
+// CUE
+// ============================================================
+
+function triggerCue(id) {
+
+  const deck =
+    state[id];
+
+
+  if (
+    !deck.audio.src
+  ) {
+
+    return;
+
+  }
+
+
+  deck.audio.currentTime =
+    deck.cuePosition || 0;
+
+
+  deck.audio.pause();
+
+
+  deck.play.textContent =
+    "▶";
+
+
+  console.log(
+    "🎯 CUE Deck " +
+    id
+  );
+
+}
+
+
+if ($("#cueA")) {
+
+  $("#cueA")
+    .addEventListener(
+      "click",
+      () => {
+
+        triggerCue("A");
+
+      }
+    );
+
+}
+
+
+if ($("#cueB")) {
+
+  $("#cueB")
+    .addEventListener(
+      "click",
+      () => {
+
+        triggerCue("B");
+
+      }
+    );
+
+}
 
 
 // ============================================================
@@ -726,30 +1488,19 @@ let midiConnected =
   false;
 
 
-// ============================================================
-// NUMARK DJ2GO2
-//
-// PLAY GAUCHE
-// Channel 1
-// Note 0
-//
-// PLAY DROITE
-// Channel 2
-// Note 0
-// ============================================================
-
 const DJ2GO2 = {
 
+  // PLAY GAUCHE
   PLAY_A_CHANNEL: 1,
   PLAY_A_NOTE: 0,
 
+  // PLAY DROITE
   PLAY_B_CHANNEL: 2,
   PLAY_B_NOTE: 0
 
 };
 
 
-// Protection contre double déclenchement
 let lastDJMessage =
   0;
 
@@ -789,9 +1540,11 @@ async function connectMIDI() {
       "================================"
     );
 
+
     console.log(
       "🎧 BLUEMIX DJ MIDI"
     );
+
 
     console.log(
       "Entrées MIDI :",
@@ -807,10 +1560,12 @@ async function connectMIDI() {
         "❌ Aucun contrôleur MIDI"
       );
 
+
       showMIDIStatus(
         "❌ Aucun MIDI détecté",
         "#ff4050"
       );
+
 
       return;
 
@@ -824,6 +1579,7 @@ async function connectMIDI() {
           "🎧 MIDI connecté :",
           input.name
         );
+
 
         input.onmidimessage =
           handleMIDIMessage;
@@ -841,6 +1597,7 @@ async function connectMIDI() {
               input.name ||
               ""
             ).toLowerCase();
+
 
           return (
             name.includes(
@@ -866,6 +1623,7 @@ async function connectMIDI() {
         dj2go2.name
       );
 
+
       showMIDIStatus(
         "🎧 NUMARK DJ2GO2 CONNECTÉE",
         "#1598ff"
@@ -889,6 +1647,7 @@ async function connectMIDI() {
           event.port.name,
           event.port.state
         );
+
 
         if (
           event.port.type ===
@@ -916,6 +1675,7 @@ async function connectMIDI() {
       "❌ Erreur MIDI",
       error
     );
+
 
     alert(
       "Impossible d'ouvrir le MIDI.\n\n" +
@@ -955,6 +1715,7 @@ function handleMIDIMessage(
       event.data
     );
 
+
   if (
     data.length < 2
   ) {
@@ -967,8 +1728,10 @@ function handleMIDIMessage(
   const status =
     data[0];
 
+
   const data1 =
     data[1];
+
 
   const data2 =
     data[2] || 0;
@@ -996,9 +1759,9 @@ function handleMIDIMessage(
   );
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // NOTE ON
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0x90
@@ -1007,6 +1770,7 @@ function handleMIDIMessage(
     const pressed =
       data2 > 0;
 
+
     handleMIDINote(
       channel,
       data1,
@@ -1014,14 +1778,15 @@ function handleMIDIMessage(
       pressed
     );
 
+
     return;
 
   }
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // NOTE OFF
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0x80
@@ -1034,14 +1799,15 @@ function handleMIDIMessage(
       false
     );
 
+
     return;
 
   }
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // CONTROL CHANGE
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0xB0
@@ -1053,14 +1819,15 @@ function handleMIDIMessage(
       data2
     );
 
+
     return;
 
   }
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // PITCH BEND
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0xE0
@@ -1070,10 +1837,12 @@ function handleMIDIMessage(
       data1 +
       (data2 << 7);
 
+
     handleMIDIPitch(
       channel,
       value
     );
+
 
     return;
 
@@ -1083,7 +1852,7 @@ function handleMIDIMessage(
 
 
 // ============================================================
-// NOTES MIDI
+// MIDI NOTES
 // ============================================================
 
 function handleMIDINote(
@@ -1121,6 +1890,7 @@ function handleMIDINote(
     const now =
       Date.now();
 
+
     if (
       now - lastDJMessage <
       100
@@ -1129,6 +1899,7 @@ function handleMIDINote(
       return;
 
     }
+
 
     lastDJMessage =
       now;
@@ -1149,12 +1920,11 @@ function handleMIDINote(
         "❌ #playA introuvable"
       );
 
+
       return;
 
     }
 
-
-    // Même action qu'un clic souris
 
     button.click();
 
@@ -1162,18 +1932,24 @@ function handleMIDINote(
     button.animate(
       [
         {
-          transform: "scale(1)",
-          filter: "brightness(1)"
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
         },
 
         {
-          transform: "scale(.85)",
-          filter: "brightness(2)"
+          transform:
+            "scale(.85)",
+          filter:
+            "brightness(2)"
         },
 
         {
-          transform: "scale(1)",
-          filter: "brightness(1)"
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
         }
 
       ],
@@ -1211,6 +1987,7 @@ function handleMIDINote(
     const now =
       Date.now();
 
+
     if (
       now - lastDJMessage <
       100
@@ -1219,6 +1996,7 @@ function handleMIDINote(
       return;
 
     }
+
 
     lastDJMessage =
       now;
@@ -1239,12 +2017,11 @@ function handleMIDINote(
         "❌ #playB introuvable"
       );
 
+
       return;
 
     }
 
-
-    // Même action qu'un clic souris
 
     button.click();
 
@@ -1252,18 +2029,24 @@ function handleMIDINote(
     button.animate(
       [
         {
-          transform: "scale(1)",
-          filter: "brightness(1)"
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
         },
 
         {
-          transform: "scale(.85)",
-          filter: "brightness(2)"
+          transform:
+            "scale(.85)",
+          filter:
+            "brightness(2)"
         },
 
         {
-          transform: "scale(1)",
-          filter: "brightness(1)"
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
         }
 
       ],
@@ -1285,7 +2068,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // NOTE PAS ENCORE PROGRAMMÉE
+  // AUTRES NOTES
   // ==========================================================
 
   console.log(
@@ -1376,45 +2159,59 @@ function showMIDIStatus(
         "div"
       );
 
+
     status.id =
       "midiStatus";
+
 
     status.style.position =
       "fixed";
 
+
     status.style.top =
       "82px";
+
 
     status.style.right =
       "15px";
 
+
     status.style.zIndex =
       "99999";
+
 
     status.style.padding =
       "10px 15px";
 
+
     status.style.background =
       "#06162e";
+
 
     status.style.border =
       "1px solid " +
       color;
 
+
     status.style.borderRadius =
       "7px";
+
 
     status.style.color =
       "#dcecff";
 
+
     status.style.fontFamily =
       "Arial,sans-serif";
+
 
     status.style.fontSize =
       "13px";
 
+
     status.style.boxShadow =
       "0 5px 20px #0008";
+
 
     document.body.appendChild(
       status
@@ -1426,8 +2223,10 @@ function showMIDIStatus(
   status.style.borderColor =
     color;
 
+
   status.textContent =
     message;
+
 
   status.style.display =
     "block";
@@ -1505,6 +2304,7 @@ function updateClock() {
   const clock =
     $("#clock");
 
+
   if (!clock) return;
 
 
@@ -1530,6 +2330,26 @@ updateClock();
 
 
 // ============================================================
+// REDESSIN APRÈS REDIMENSIONNEMENT
+// ============================================================
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    drawDeckWaveform(
+      state.A
+    );
+
+    drawDeckWaveform(
+      state.B
+    );
+
+  }
+);
+
+
+// ============================================================
 // DÉMARRAGE
 // ============================================================
 
@@ -1543,6 +2363,10 @@ console.log(
 
 console.log(
   "✅ APP.JS CHARGÉ"
+);
+
+console.log(
+  "🎵 WAVEFORM RÉELLE ACTIVÉE"
 );
 
 console.log(
