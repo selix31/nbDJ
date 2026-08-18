@@ -53,49 +53,419 @@ const cuePoints = {
 
 
 // ============================================================
+// AJOUT DU STYLE DES X
+// ============================================================
+
+function addCueDeleteStyle() {
+
+  if ($("#blueMixCueDeleteStyle")) return;
+
+  const style = document.createElement("style");
+
+  style.id = "blueMixCueDeleteStyle";
+
+  style.textContent = `
+
+    .cuePad {
+      position: relative !important;
+      overflow: visible !important;
+    }
+
+    .cueDelete {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+
+      width: 20px;
+      height: 20px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 0;
+      margin: 0;
+
+      border-radius: 50%;
+
+      background: #08182c;
+      border: 1px solid #526b83;
+
+      color: #ffffff;
+
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+
+      line-height: 1;
+
+      cursor: pointer;
+
+      z-index: 20;
+
+      user-select: none;
+      -webkit-user-select: none;
+
+      touch-action: manipulation;
+
+      transition:
+        background .15s,
+        border-color .15s,
+        transform .1s;
+    }
+
+    .cueDelete:hover {
+      background: #e32638;
+      border-color: #ff5a68;
+      color: white;
+      transform: scale(1.08);
+    }
+
+    .cueDelete:active {
+      background: #ff3044;
+      transform: scale(.90);
+    }
+
+    .deckB .cueDelete:hover {
+      background: #e32638;
+      border-color: #ff5a68;
+    }
+
+  `;
+
+  document.head.appendChild(style);
+
+}
+
+
+// ============================================================
+// CRÉER LES X DES HOT CUES
+// ============================================================
+
+function createCueDeleteButtons() {
+
+  addCueDeleteStyle();
+
+  document
+    .querySelectorAll(".deckA .cuePad")
+    .forEach((pad, index) => {
+
+      createCueDeleteButton(
+        pad,
+        "A",
+        index
+      );
+
+    });
+
+
+  document
+    .querySelectorAll(".deckB .cuePad")
+    .forEach((pad, index) => {
+
+      createCueDeleteButton(
+        pad,
+        "B",
+        index
+      );
+
+    });
+
+}
+
+
+// ============================================================
+// CRÉER UN X
+// ============================================================
+
+function createCueDeleteButton(
+  pad,
+  deckId,
+  cueIndex
+) {
+
+  // Évite de créer deux X
+  if (
+    pad.querySelector(".cueDelete")
+  ) {
+
+    return;
+
+  }
+
+
+  const deleteButton =
+    document.createElement("span");
+
+
+  deleteButton.className =
+    "cueDelete";
+
+  deleteButton.textContent =
+    "×";
+
+  deleteButton.title =
+    `Supprimer le CUE ${cueIndex + 1}`;
+
+
+  // ----------------------------------------------------------
+  // SOURIS + TACTILE
+  // ----------------------------------------------------------
+
+  deleteButton.addEventListener(
+    "pointerdown",
+    event => {
+
+      // Très important :
+      // empêche le clic de toucher le Hot Cue
+      event.preventDefault();
+      event.stopPropagation();
+
+    }
+  );
+
+
+  deleteButton.addEventListener(
+    "click",
+    event => {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+
+      deleteCue(
+        deckId,
+        cueIndex + 1
+      );
+
+    }
+  );
+
+
+  // ----------------------------------------------------------
+  // CLAVIER
+  // ----------------------------------------------------------
+
+  deleteButton.setAttribute(
+    "role",
+    "button"
+  );
+
+  deleteButton.setAttribute(
+    "tabindex",
+    "0"
+  );
+
+
+  deleteButton.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" ||
+        event.key === " "
+      ) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+
+        deleteCue(
+          deckId,
+          cueIndex + 1
+        );
+
+      }
+
+    }
+  );
+
+
+  pad.appendChild(
+    deleteButton
+  );
+
+}
+
+
+// ============================================================
+// SUPPRIMER UN CUE
+// ============================================================
+
+function deleteCue(
+  deckId,
+  cueNumber
+) {
+
+  const index =
+    cueNumber - 1;
+
+
+  if (
+    cuePoints[deckId][index] === null
+  ) {
+
+    console.log(
+      `ℹ️ CUE ${cueNumber} Deck ${deckId} est déjà vide`
+    );
+
+    flashCueDelete(
+      deckId,
+      cueNumber
+    );
+
+    return;
+
+  }
+
+
+  console.log(
+    `🗑️ CUE ${cueNumber} Deck ${deckId} supprimé`
+  );
+
+
+  cuePoints[deckId][index] =
+    null;
+
+
+  flashCueDelete(
+    deckId,
+    cueNumber
+  );
+
+}
+
+
+// ============================================================
+// EFFET VISUEL DU X
+// ============================================================
+
+function flashCueDelete(
+  deckId,
+  cueNumber
+) {
+
+  const selector =
+    deckId === "A"
+      ? ".deckA .cuePad"
+      : ".deckB .cuePad";
+
+
+  const pads =
+    document.querySelectorAll(
+      selector
+    );
+
+
+  const pad =
+    pads[cueNumber - 1];
+
+
+  if (!pad) return;
+
+
+  const deleteButton =
+    pad.querySelector(
+      ".cueDelete"
+    );
+
+
+  if (!deleteButton) return;
+
+
+  deleteButton.animate(
+    [
+      {
+        transform: "scale(1)"
+      },
+      {
+        transform: "scale(1.35)"
+      },
+      {
+        transform: "scale(1)"
+      }
+    ],
+    {
+      duration: 180
+    }
+  );
+
+}
+
+
+// ============================================================
 // CHARGEMENT DES MUSIQUES
 // ============================================================
 
-function setupDeck(id, fileInput) {
+function setupDeck(
+  id,
+  fileInput
+) {
 
-  $(fileInput).addEventListener("change", event => {
+  $(fileInput).addEventListener(
+    "change",
+    event => {
 
-    const file = event.target.files[0];
-
-    if (!file) return;
-
-    const deck = state[id];
-
-    deck.audio.src =
-      URL.createObjectURL(file);
-
-    deck.title.textContent =
-      file.name.replace(/\.[^/.]+$/, "");
-
-    deck.artist.textContent =
-      "Fichier local";
-
-    deck.audio.load();
-
-    // On efface les anciens CUE
-    cuePoints[id] = [null, null, null, null];
-
-    drawWave(deck.wave, id);
-
-    console.log(
-      `🎵 Morceau chargé sur Deck ${id}`
-    );
-
-  });
+      const file =
+        event.target.files[0];
 
 
+      if (!file) return;
+
+
+      const deck =
+        state[id];
+
+
+      deck.audio.src =
+        URL.createObjectURL(file);
+
+
+      deck.title.textContent =
+        file.name.replace(
+          /\.[^/.]+$/,
+          ""
+        );
+
+
+      deck.artist.textContent =
+        "Fichier local";
+
+
+      deck.audio.load();
+
+
+      // Nouveau morceau = nouveaux CUE
+      cuePoints[id] =
+        [null, null, null, null];
+
+
+      drawWave(
+        deck.wave,
+        id
+      );
+
+
+      console.log(
+        `🎵 Morceau chargé sur Deck ${id}`
+      );
+
+    }
+  );
+
+
+  // ----------------------------------------------------------
   // PLAY / PAUSE SOURIS
+  // ----------------------------------------------------------
 
-  state[id].play.addEventListener("click", async () => {
+  state[id].play.addEventListener(
+    "click",
+    async () => {
 
-    await togglePlay(id);
+      await togglePlay(id);
 
-  });
+    }
+  );
 
 }
 
@@ -106,7 +476,9 @@ function setupDeck(id, fileInput) {
 
 async function togglePlay(id) {
 
-  const deck = state[id];
+  const deck =
+    state[id];
+
 
   if (!deck.audio.src) {
 
@@ -125,7 +497,9 @@ async function togglePlay(id) {
 
       await deck.audio.play();
 
-      deck.play.textContent = "❚❚";
+      deck.play.textContent =
+        "❚❚";
+
 
       console.log(
         `▶ PLAY Deck ${id}`
@@ -135,7 +509,9 @@ async function togglePlay(id) {
 
       deck.audio.pause();
 
-      deck.play.textContent = "▶";
+      deck.play.textContent =
+        "▶";
+
 
       console.log(
         `⏸ PAUSE Deck ${id}`
@@ -156,34 +532,53 @@ async function togglePlay(id) {
 
 
 // ============================================================
-// INITIALISATION DECKS
+// INITIALISATION
 // ============================================================
 
-setupDeck("A", "#fileA");
-setupDeck("B", "#fileB");
+setupDeck(
+  "A",
+  "#fileA"
+);
+
+setupDeck(
+  "B",
+  "#fileB"
+);
 
 
 // ============================================================
 // WAVEFORM
 // ============================================================
 
-function drawWave(canvas, id) {
+function drawWave(
+  canvas,
+  id
+) {
 
   if (!canvas) return;
 
+
   const ctx =
     canvas.getContext("2d");
+
 
   const width =
     canvas.clientWidth *
     devicePixelRatio;
 
+
   const height =
     canvas.clientHeight *
     devicePixelRatio;
 
-  canvas.width = width;
-  canvas.height = height;
+
+  canvas.width =
+    width;
+
+
+  canvas.height =
+    height;
+
 
   ctx.clearRect(
     0,
@@ -194,9 +589,9 @@ function drawWave(canvas, id) {
 
 
   // Fond
-
   ctx.fillStyle =
     "#04182e";
+
 
   ctx.fillRect(
     0,
@@ -206,20 +601,23 @@ function drawWave(canvas, id) {
   );
 
 
-  // Couleur
-
   const color =
     id === "A"
       ? "#1598ff"
       : "#ff3e4d";
 
 
-  // Waveform
+  // ----------------------------------------------------------
+  // WAVEFORM
+  // ----------------------------------------------------------
 
-  ctx.strokeStyle = color;
+  ctx.strokeStyle =
+    color;
+
 
   ctx.lineWidth =
     2 * devicePixelRatio;
+
 
   ctx.beginPath();
 
@@ -231,16 +629,28 @@ function drawWave(canvas, id) {
   ) {
 
     const wave1 =
-      Math.sin(x * 0.055) *
-      height * 0.16;
+      Math.sin(
+        x * 0.055
+      ) *
+      height *
+      0.16;
+
 
     const wave2 =
-      Math.sin(x * 0.013) *
-      height * 0.18;
+      Math.sin(
+        x * 0.013
+      ) *
+      height *
+      0.18;
+
 
     const wave3 =
-      Math.sin(x * 0.11) *
-      height * 0.07;
+      Math.sin(
+        x * 0.11
+      ) *
+      height *
+      0.07;
+
 
     const y =
       height / 2 +
@@ -248,47 +658,66 @@ function drawWave(canvas, id) {
       wave2 +
       wave3;
 
+
     if (x === 0) {
 
-      ctx.moveTo(x, y);
+      ctx.moveTo(
+        x,
+        y
+      );
 
     } else {
 
-      ctx.lineTo(x, y);
+      ctx.lineTo(
+        x,
+        y
+      );
 
     }
 
   }
 
+
   ctx.stroke();
 
 
-  // Ligne centrale
+  // ----------------------------------------------------------
+  // LIGNE CENTRALE
+  // ----------------------------------------------------------
 
   ctx.strokeStyle =
     color + "55";
 
-  ctx.lineWidth = 1;
+
+  ctx.lineWidth =
+    1;
+
 
   ctx.beginPath();
+
 
   ctx.moveTo(
     0,
     height / 2
   );
 
+
   ctx.lineTo(
     width,
     height / 2
   );
 
+
   ctx.stroke();
 
 
-  // Position de lecture
+  // ----------------------------------------------------------
+  // POSITION DE LECTURE
+  // ----------------------------------------------------------
 
   const audio =
     state[id].audio;
+
 
   if (
     audio.duration &&
@@ -298,6 +727,7 @@ function drawWave(canvas, id) {
     const position =
       audio.currentTime /
       audio.duration;
+
 
     drawPlayPosition(
       canvas,
@@ -311,7 +741,7 @@ function drawWave(canvas, id) {
 
 
 // ============================================================
-// POSITION DE LECTURE SUR WAVEFORM
+// POSITION DE LECTURE
 // ============================================================
 
 function drawPlayPosition(
@@ -323,50 +753,60 @@ function drawPlayPosition(
   const ctx =
     canvas.getContext("2d");
 
+
   const x =
     position *
     canvas.width;
 
+
   ctx.strokeStyle =
     "#ffffff";
+
 
   ctx.lineWidth =
     2 * devicePixelRatio;
 
+
   ctx.beginPath();
+
 
   ctx.moveTo(
     x,
     0
   );
 
+
   ctx.lineTo(
     x,
     canvas.height
   );
+
 
   ctx.stroke();
 
 
-  // Glow
-
   ctx.strokeStyle =
     color;
 
+
   ctx.lineWidth =
-    1 * devicePixelRatio;
+    devicePixelRatio;
+
 
   ctx.beginPath();
+
 
   ctx.moveTo(
     x - 2,
     0
   );
 
+
   ctx.lineTo(
     x - 2,
     canvas.height
   );
+
 
   ctx.stroke();
 
@@ -404,8 +844,7 @@ audioB.addEventListener(
 
 
 // ============================================================
-// CLIQUER SUR LA WAVEFORM
-// POUR ALLER À UN ENDROIT
+// CLIQUER SUR WAVEFORM
 // ============================================================
 
 function setupWaveSeek(
@@ -487,7 +926,7 @@ setupWaveSeek(
 
 
 // ============================================================
-// REDESSIN WAVEFORMS
+// WAVEFORM INITIALE
 // ============================================================
 
 drawWave(
@@ -509,6 +948,7 @@ window.addEventListener(
       $("#waveA"),
       "A"
     );
+
 
     drawWave(
       $("#waveB"),
@@ -637,19 +1077,26 @@ function setupJog(
   const jog =
     $(selector);
 
-  let touching = false;
 
-  let lastX = 0;
+  let touching =
+    false;
+
+
+  let lastX =
+    0;
 
 
   jog.addEventListener(
     "pointerdown",
     event => {
 
-      touching = true;
+      touching =
+        true;
+
 
       lastX =
         event.clientX;
+
 
       jog.setPointerCapture(
         event.pointerId
@@ -663,7 +1110,8 @@ function setupJog(
     "pointerup",
     () => {
 
-      touching = false;
+      touching =
+        false;
 
     }
   );
@@ -673,7 +1121,8 @@ function setupJog(
     "pointercancel",
     () => {
 
-      touching = false;
+      touching =
+        false;
 
     }
   );
@@ -685,9 +1134,11 @@ function setupJog(
 
       if (!touching) return;
 
+
       const movement =
         event.clientX -
         lastX;
+
 
       lastX =
         event.clientX;
@@ -742,7 +1193,7 @@ $("#recordBtn")
 
 
 // ============================================================
-// CUE
+// ENREGISTRER UN CUE
 // ============================================================
 
 function setCue(
@@ -840,7 +1291,7 @@ function goToCue(
 
 
 // ============================================================
-// EFFET VISUEL CUE
+// FLASH CUE
 // ============================================================
 
 function flashCue(
@@ -891,105 +1342,93 @@ function flashCue(
 // CUE SOURIS
 // ============================================================
 
-document
-  .querySelectorAll(
-    ".deckA .cuePad"
-  )
-  .forEach(
-    (button, index) => {
+function setupMouseCues(
+  deckId
+) {
 
-      button.addEventListener(
-        "click",
-        () => {
-
-          const cueNumber =
-            index + 1;
+  const selector =
+    deckId === "A"
+      ? ".deckA .cuePad"
+      : ".deckB .cuePad";
 
 
-          if (
-            cuePoints.A[index] ===
-            null
-          ) {
+  document
+    .querySelectorAll(selector)
+    .forEach(
+      (button, index) => {
 
-            setCue(
-              "A",
-              cueNumber
-            );
+        button.addEventListener(
+          "click",
+          event => {
 
-          } else {
+            // Si le clic vient du X,
+            // on ne fait rien ici.
+            if (
+              event.target.closest(
+                ".cueDelete"
+              )
+            ) {
 
-            goToCue(
-              "A",
-              cueNumber
-            );
+              return;
 
-          }
-
-
-          flashCue(
-            "A",
-            cueNumber
-          );
-
-        }
-      );
-
-    }
-  );
+            }
 
 
-document
-  .querySelectorAll(
-    ".deckB .cuePad"
-  )
-  .forEach(
-    (button, index) => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const cueNumber =
-            index + 1;
+            const cueNumber =
+              index + 1;
 
 
-          if (
-            cuePoints.B[index] ===
-            null
-          ) {
+            if (
+              cuePoints[deckId][index] ===
+              null
+            ) {
 
-            setCue(
-              "B",
-              cueNumber
-            );
+              setCue(
+                deckId,
+                cueNumber
+              );
 
-          } else {
+            } else {
 
-            goToCue(
-              "B",
+              goToCue(
+                deckId,
+                cueNumber
+              );
+
+            }
+
+
+            flashCue(
+              deckId,
               cueNumber
             );
 
           }
+        );
+
+      }
+    );
+
+}
 
 
-          flashCue(
-            "B",
-            cueNumber
-          );
+setupMouseCues("A");
+setupMouseCues("B");
 
-        }
-      );
 
-    }
-  );
+// ============================================================
+// CRÉATION DES X
+// ============================================================
+
+createCueDeleteButtons();
 
 
 // ============================================================
 // MIDI
 // ============================================================
 
-let midiAccess = null;
+let midiAccess =
+  null;
 
 
 // ============================================================
@@ -1070,10 +1509,10 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// NUMARK DJ2GO2
-// DECK A PLAY
-// ============================================================
+  // ==========================================================
+  // NUMARK DJ2GO2
+  // PLAY DECK A
+  // ==========================================================
 
   if (
     channel === 1 &&
@@ -1093,11 +1532,10 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// NUMARK DJ2GO2
-// CUE A1
-// channel 5 / note 1
-// ============================================================
+  // ==========================================================
+  // CUE A1
+  // CHANNEL 5 / NOTE 1
+  // ==========================================================
 
   if (
     channel === 5 &&
@@ -1140,10 +1578,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE A2
-// channel 5 / note 2
-// ============================================================
+  // ==========================================================
+  // CUE A2
+  // ==========================================================
 
   if (
     channel === 5 &&
@@ -1186,9 +1623,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE A3
-// ============================================================
+  // ==========================================================
+  // CUE A3
+  // ==========================================================
 
   if (
     channel === 5 &&
@@ -1231,9 +1668,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE A4
-// ============================================================
+  // ==========================================================
+  // CUE A4
+  // ==========================================================
 
   if (
     channel === 5 &&
@@ -1276,9 +1713,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// DECK B PLAY
-// ============================================================
+  // ==========================================================
+  // PLAY DECK B
+  // ==========================================================
 
   if (
     channel === 2 &&
@@ -1298,9 +1735,10 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE B1
-// ============================================================
+  // ==========================================================
+  // CUE B1
+  // CHANNEL 6 / NOTE 1
+  // ==========================================================
 
   if (
     channel === 6 &&
@@ -1343,9 +1781,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE B2
-// ============================================================
+  // ==========================================================
+  // CUE B2
+  // ==========================================================
 
   if (
     channel === 6 &&
@@ -1388,9 +1826,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE B3
-// ============================================================
+  // ==========================================================
+  // CUE B3
+  // ==========================================================
 
   if (
     channel === 6 &&
@@ -1433,9 +1871,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// CUE B4
-// ============================================================
+  // ==========================================================
+  // CUE B4
+  // ==========================================================
 
   if (
     channel === 6 &&
@@ -1478,9 +1916,9 @@ function midiMessage(event) {
   }
 
 
-// ============================================================
-// MIDI NON MAPPÉ
-// ============================================================
+  // ==========================================================
+  // NOTE NON MAPPÉE
+  // ==========================================================
 
   console.log(
     "🎹 NOTE NON MAPPÉE",
@@ -1639,8 +2077,7 @@ $("#midiBtn")
 
 function updateClock() {
 
-  $("#clock")
-    .textContent =
+  $("#clock").textContent =
     new Date()
       .toLocaleTimeString(
         "fr-CA",
@@ -1672,4 +2109,12 @@ console.log(
 
 console.log(
   "🎛️ MIDI prêt"
+);
+
+console.log(
+  "🎯 Hot Cues prêts"
+);
+
+console.log(
+  "❌ Suppression des Hot Cues prête"
 );
