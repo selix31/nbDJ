@@ -41,6 +41,48 @@ const waveB = $("#waveB");
 
 
 // ============================================================
+// HOT CUES
+// ============================================================
+
+const hotCues = {
+
+  A: {
+    1: null,
+    2: null,
+    3: null,
+    4: null
+  },
+
+  B: {
+    1: null,
+    2: null,
+    3: null,
+    4: null
+  }
+
+};
+
+
+// ============================================================
+// EFFACER LES HOT CUES
+// ============================================================
+
+function clearHotCues(deckId) {
+
+  hotCues[deckId][1] = null;
+  hotCues[deckId][2] = null;
+  hotCues[deckId][3] = null;
+  hotCues[deckId][4] = null;
+
+
+  console.log(
+    `🧹 Hot Cues Deck ${deckId} effacés`
+  );
+
+}
+
+
+// ============================================================
 // CHARGEMENT DES MUSIQUES
 // ============================================================
 
@@ -61,6 +103,11 @@ function setupDeck(id, fileInput) {
         event.target.files[0];
 
       if (!file) return;
+
+
+      // Nouveau morceau = nouveaux Hot Cues
+
+      clearHotCues(id);
 
 
       deck.audio.src =
@@ -100,7 +147,7 @@ function setupDeck(id, fileInput) {
   );
 
 
-  // PLAY / PAUSE AVEC LA SOURIS
+  // PLAY / PAUSE SOURIS
 
   deck.play.addEventListener(
     "click",
@@ -154,7 +201,8 @@ async function toggleDeckPlay(id) {
   const deck =
     state[id];
 
-  if (!deck) return;
+  if (!deck)
+    return;
 
 
   if (!deck.audio.src) {
@@ -220,7 +268,8 @@ async function toggleDeckPlay(id) {
 
 function drawWave(canvas, id) {
 
-  if (!canvas) return;
+  if (!canvas)
+    return;
 
 
   const audio =
@@ -245,7 +294,9 @@ function drawWave(canvas, id) {
     !width ||
     !height
   ) {
+
     return;
+
   }
 
 
@@ -312,7 +363,7 @@ function drawWave(canvas, id) {
 
 
   // ----------------------------------------------------------
-  // POSITION MUSIQUE
+  // PROGRESSION
   // ----------------------------------------------------------
 
   let progress = 0;
@@ -515,10 +566,93 @@ function drawWave(canvas, id) {
 
   }
 
+
+  // ----------------------------------------------------------
+  // AFFICHER LES HOT CUES SUR LA WAVEFORM
+  // ----------------------------------------------------------
+
+  const cues =
+    hotCues[id];
+
+
+  Object.keys(cues)
+    .forEach(
+      cueNumber => {
+
+        const cueTime =
+          cues[cueNumber];
+
+
+        if (
+          cueTime === null ||
+          !audio.duration
+        ) {
+
+          return;
+
+        }
+
+
+        const cueX =
+          (
+            cueTime /
+            audio.duration
+          ) *
+          width;
+
+
+        ctx.strokeStyle =
+          id === "A"
+            ? "#00d9ff"
+            : "#ff6670";
+
+
+        ctx.lineWidth = 2;
+
+
+        ctx.beginPath();
+
+
+        ctx.moveTo(
+          cueX,
+          0
+        );
+
+
+        ctx.lineTo(
+          cueX,
+          height
+        );
+
+
+        ctx.stroke();
+
+
+        ctx.fillStyle =
+          id === "A"
+            ? "#00d9ff"
+            : "#ff6670";
+
+
+        ctx.font =
+          "bold 12px Arial";
+
+
+        ctx.fillText(
+          cueNumber,
+          cueX + 4,
+          14
+        );
+
+      }
+    );
+
 }
 
 
-// Première waveform
+// ============================================================
+// DESSIN INITIAL
+// ============================================================
 
 drawWave(
   waveA,
@@ -584,13 +718,9 @@ function seekWave(
     x / rect.width;
 
 
-  const newTime =
+  audio.currentTime =
     percentage *
     audio.duration;
-
-
-  audio.currentTime =
-    newTime;
 
 
   drawWave(
@@ -600,13 +730,11 @@ function seekWave(
 
 
   console.log(
-    `🎵 Deck ${id}: ${newTime.toFixed(2)} secondes`
+    `🎵 Deck ${id}: ${audio.currentTime.toFixed(2)} secondes`
   );
 
 }
 
-
-// Deck A
 
 waveA.addEventListener(
   "click",
@@ -622,8 +750,6 @@ waveA.addEventListener(
   }
 );
 
-
-// Deck B
 
 waveB.addEventListener(
   "click",
@@ -641,7 +767,7 @@ waveB.addEventListener(
 
 
 // ============================================================
-// TOUCH / TÉLÉPHONE
+// TOUCH
 // ============================================================
 
 waveA.addEventListener(
@@ -845,7 +971,8 @@ function setupJog(
   const jog =
     $(selector);
 
-  if (!jog) return;
+  if (!jog)
+    return;
 
 
   let touching =
@@ -1087,7 +1214,7 @@ async function connectMIDI() {
 
 
 // ============================================================
-// CONNEXION DES ENTRÉES
+// ENTRÉES MIDI
 // ============================================================
 
 function connectMIDIInputs() {
@@ -1189,7 +1316,9 @@ function handleMIDIMessage(event) {
     !data ||
     data.length < 3
   ) {
+
     return;
+
   }
 
 
@@ -1217,8 +1346,6 @@ function handleMIDIMessage(event) {
     false;
 
 
-  // NOTE ON
-
   if (
     command === 0x90
   ) {
@@ -1228,9 +1355,6 @@ function handleMIDIMessage(event) {
 
   }
 
-
-  // NOTE OFF
-
   else if (
     command === 0x80
   ) {
@@ -1239,7 +1363,6 @@ function handleMIDIMessage(event) {
       false;
 
   }
-
 
   else {
 
@@ -1288,11 +1411,21 @@ function triggerHotCue(
       : audioB;
 
 
+  const wave =
+    deckId === "A"
+      ? waveA
+      : waveB;
+
+
+  const padSelector =
+    deckId === "A"
+      ? ".deckA .cuePad"
+      : ".deckB .cuePad";
+
+
   const pads =
     document.querySelectorAll(
-      deckId === "A"
-        ? ".deckA .cuePad"
-        : ".deckB .cuePad"
+      padSelector
     );
 
 
@@ -1300,7 +1433,7 @@ function triggerHotCue(
     pads[cueNumber - 1];
 
 
-  // Animation
+  // Animation du bouton
 
   if (pad) {
 
@@ -1328,12 +1461,14 @@ function triggerHotCue(
         }
       ],
       {
-        duration: 160
+        duration: 180
       }
     );
 
   }
 
+
+  // Pas de musique
 
   if (
     !audio.src ||
@@ -1341,7 +1476,7 @@ function triggerHotCue(
   ) {
 
     console.log(
-      `🎹 CUE ${cueNumber} DECK ${deckId}: aucune musique chargée`
+      `🎹 CUE ${cueNumber} Deck ${deckId}: aucune musique`
     );
 
     return;
@@ -1349,31 +1484,66 @@ function triggerHotCue(
   }
 
 
-  // Pour l'instant :
-  // CUE 1 et CUE 2 retournent au début.
+  // ==========================================================
+  // PREMIER APPUI = ENREGISTRER
+  // APPUIS SUIVANTS = RAPPELER
+  // ==========================================================
 
   if (
-    cueNumber === 1 ||
-    cueNumber === 2
+    hotCues[deckId][cueNumber] === null
   ) {
 
-    audio.currentTime =
-      0;
+    hotCues[deckId][cueNumber] =
+      audio.currentTime;
 
 
-    drawWave(
-      deckId === "A"
-        ? waveA
-        : waveB,
-      deckId
+    console.log(
+      `🔴 HOT CUE ${cueNumber} ENREGISTRÉ`
     );
 
 
     console.log(
-      `🔥 HOT CUE ${cueNumber} DECK ${deckId}`
+      `📍 Position: ${audio.currentTime.toFixed(3)} secondes`
     );
 
+
+    drawWave(
+      wave,
+      deckId
+    );
+
+
+    return;
+
   }
+
+
+  // ==========================================================
+  // RAPPEL DU CUE
+  // ==========================================================
+
+  const cueTime =
+    hotCues[deckId][cueNumber];
+
+
+  audio.currentTime =
+    cueTime;
+
+
+  drawWave(
+    wave,
+    deckId
+  );
+
+
+  console.log(
+    `🔥 HOT CUE ${cueNumber} RAPPELÉ`
+  );
+
+
+  console.log(
+    `📍 Retour à ${cueTime.toFixed(3)} secondes`
+  );
 
 }
 
@@ -1391,8 +1561,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // DECK A
-  // HOT CUE 1
+  // DECK A - CUE 1
   //
   // CANAL 5
   // NOTE 2
@@ -1418,8 +1587,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // DECK A
-  // HOT CUE 2
+  // DECK A - CUE 2
   //
   // CANAL 5
   // NOTE 1
@@ -1445,7 +1613,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // DECK A PLAY
+  // DECK A - PLAY
   //
   // CANAL 1
   // NOTE 0
@@ -1470,7 +1638,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // DECK B PLAY
+  // DECK B - PLAY
   //
   // CANAL 2
   // NOTE 0
@@ -1495,7 +1663,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // AUTRES TOUCHES
+  // PAS ENCORE PROGRAMMÉ
   // ==========================================================
 
   console.log(
@@ -1512,7 +1680,7 @@ function handleMIDINote(
 
 
 // ============================================================
-// DÉTECTION MIDI AUTOMATIQUE
+// MIDI AUTOMATIQUE
 // ============================================================
 
 if (
@@ -1560,13 +1728,13 @@ if (
 
 
 // ============================================================
-// HOT CUES À LA SOURIS
+// HOT CUES SOURIS
 // ============================================================
 
 document
   .querySelectorAll(".cuePad")
   .forEach(
-    button => {
+    (button, index) => {
 
       button.addEventListener(
         "click",
@@ -1639,22 +1807,18 @@ console.log(
   "🎧 BlueMix DJ prêt"
 );
 
-
 console.log(
   "🎹 MIDI prêt"
 );
 
-
 console.log(
-  "🔥 CUE 1 A = CANAL 5 / NOTE 2"
+  "🔥 CUE 1 = canal 5 / note 2"
 );
 
-
 console.log(
-  "🔥 CUE 2 A = CANAL 5 / NOTE 1"
+  "🔥 CUE 2 = canal 5 / note 1"
 );
 
-
 console.log(
-  "🎵 Waveform interactive prête"
+  "🎵 HOT CUES actifs"
 );
