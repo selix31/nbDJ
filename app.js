@@ -1,5 +1,6 @@
 // ============================================================
-// BLUEMIX DJ - APP.JS
+// BLUEMIX DJ
+// APP.JS
 // ============================================================
 
 
@@ -19,7 +20,7 @@ const audioB = $("#audioB");
 
 
 // ============================================================
-// ÉTAT DES DECKS
+// ÉTAT
 // ============================================================
 
 const state = {
@@ -31,7 +32,6 @@ const state = {
     wave: $("#waveA"),
     play: $("#playA"),
     cue: $("#cueA"),
-    pitch: $("#pitchA"),
     cuePosition: 0
   },
 
@@ -42,7 +42,6 @@ const state = {
     wave: $("#waveB"),
     play: $("#playB"),
     cue: $("#cueB"),
-    pitch: $("#pitchB"),
     cuePosition: 0
   }
 
@@ -50,43 +49,112 @@ const state = {
 
 
 // ============================================================
+// AUDIO AUTORISÉ PAR LE NAVIGATEUR
+// ============================================================
+
+let audioUnlocked = false;
+
+
+function unlockAudio() {
+
+  if (audioUnlocked) {
+    return;
+  }
+
+  // On ne joue rien ici.
+  // Le premier clic utilisateur sur un bouton audio
+  // permettra au navigateur d'autoriser la lecture.
+
+  audioUnlocked = true;
+
+  console.log(
+    "🔊 Audio utilisateur activé"
+  );
+
+}
+
+
+// ============================================================
 // CHARGEMENT DES MUSIQUES
 // ============================================================
 
-function setupDeck(id, fileInput) {
+function setupDeck(id, fileSelector) {
 
-  const input = $(fileInput);
+  const input = $(fileSelector);
 
-  if (!input) return;
+  if (!input) {
+    return;
+  }
 
 
-  input.addEventListener("change", event => {
+  input.addEventListener(
+    "change",
+    event => {
 
-    const file = event.target.files[0];
+      const file =
+        event.target.files[0];
 
-    if (!file) return;
+      if (!file) {
+        return;
+      }
 
-    const deck = state[id];
 
-    deck.audio.src =
-      URL.createObjectURL(file);
+      const deck =
+        state[id];
 
-    deck.title.textContent =
-      file.name.replace(/\.[^/.]+$/, "");
 
-    deck.artist.textContent =
-      "Fichier local";
+      // Libère éventuellement l'ancien fichier
+      if (
+        deck.objectURL
+      ) {
 
-    deck.cuePosition = 0;
+        URL.revokeObjectURL(
+          deck.objectURL
+        );
 
-    deck.audio.load();
+      }
 
-    drawWave(
-      deck.wave,
-      id
-    );
 
-  });
+      deck.objectURL =
+        URL.createObjectURL(file);
+
+
+      deck.audio.src =
+        deck.objectURL;
+
+
+      deck.title.textContent =
+        file.name.replace(
+          /\.[^/.]+$/,
+          ""
+        );
+
+
+      deck.artist.textContent =
+        "Fichier local";
+
+
+      deck.cuePosition = 0;
+
+
+      deck.audio.load();
+
+
+      drawWave(
+        deck.wave,
+        id
+      );
+
+
+      console.log(
+        "🎵 Morceau chargé Deck " +
+        id +
+        ": " +
+        file.name
+      );
+
+    }
+  );
 
 
   // PLAY / PAUSE
@@ -96,6 +164,8 @@ function setupDeck(id, fileInput) {
     state[id].play.addEventListener(
       "click",
       () => {
+
+        unlockAudio();
 
         togglePlay(id);
 
@@ -113,12 +183,20 @@ function setupDeck(id, fileInput) {
 
 function togglePlay(id) {
 
-  const deck = state[id];
+  const deck =
+    state[id];
+
 
   if (!deck.audio.src) {
 
     console.log(
-      "Aucun morceau chargé sur le Deck " + id
+      "⚠️ Aucun morceau chargé sur Deck " +
+      id
+    );
+
+    showMIDIStatus(
+      "⚠️ Charge un morceau sur Deck " + id,
+      "#ff4050"
     );
 
     return;
@@ -126,96 +204,100 @@ function togglePlay(id) {
   }
 
 
-  if (deck.audio.paused) {
+  // ----------------------------------------------------------
+  // PAUSE
+  // ----------------------------------------------------------
 
-    deck.audio.play()
+  if (!deck.audio.paused) {
+
+    deck.audio.pause();
+
+    deck.play.textContent =
+      "▶";
+
+
+    console.log(
+      "⏸ PAUSE Deck " + id
+    );
+
+    return;
+
+  }
+
+
+  // ----------------------------------------------------------
+  // PLAY
+  // ----------------------------------------------------------
+
+  console.log(
+    "▶ PLAY Deck " + id
+  );
+
+
+  const promise =
+    deck.audio.play();
+
+
+  if (
+    promise &&
+    typeof promise.then === "function"
+  ) {
+
+    promise
       .then(() => {
 
-        deck.play.textContent = "❚❚";
+        deck.play.textContent =
+          "❚❚";
+
+
+        console.log(
+          "🔊 Lecture Deck " +
+          id +
+          " OK"
+        );
 
       })
       .catch(error => {
 
+        deck.play.textContent =
+          "▶";
+
+
         console.error(
-          "Erreur lecture Deck " + id,
+          "❌ Impossible de démarrer Deck " +
+          id,
           error
         );
 
+
+        if (
+          error.name ===
+          "NotAllowedError"
+        ) {
+
+          showMIDIStatus(
+            "👆 Clique une fois sur ▶ avec la souris",
+            "#ff4050"
+          );
+
+        } else {
+
+          showMIDIStatus(
+            "❌ Erreur audio",
+            "#ff4050"
+          );
+
+        }
+
       });
 
-  } else {
-
-    deck.audio.pause();
-
-    deck.play.textContent = "▶";
-
   }
 
 }
 
 
 // ============================================================
-// CUE
-// ============================================================
-
-function triggerCue(id) {
-
-  const deck = state[id];
-
-  if (!deck.audio.src) {
-
-    console.log(
-      "Aucun morceau chargé sur le Deck " + id
-    );
-
-    return;
-
-  }
-
-  deck.audio.currentTime =
-    deck.cuePosition || 0;
-
-  deck.audio.pause();
-
-  deck.play.textContent = "▶";
-
-}
-
-
-// ============================================================
-// BOUTONS CUE
-// ============================================================
-
-if ($("#cueA")) {
-
-  $("#cueA").addEventListener(
-    "click",
-    () => {
-
-      triggerCue("A");
-
-    }
-  );
-
-}
-
-
-if ($("#cueB")) {
-
-  $("#cueB").addEventListener(
-    "click",
-    () => {
-
-      triggerCue("B");
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// INITIALISATION
+// INITIALISATION DECKS
 // ============================================================
 
 setupDeck(
@@ -238,7 +320,10 @@ audioA.addEventListener(
   () => {
 
     if ($("#playA")) {
-      $("#playA").textContent = "▶";
+
+      $("#playA").textContent =
+        "▶";
+
     }
 
   }
@@ -250,11 +335,81 @@ audioB.addEventListener(
   () => {
 
     if ($("#playB")) {
-      $("#playB").textContent = "▶";
+
+      $("#playB").textContent =
+        "▶";
+
     }
 
   }
 );
+
+
+// ============================================================
+// CUE
+// ============================================================
+
+function triggerCue(id) {
+
+  const deck =
+    state[id];
+
+
+  if (!deck.audio.src) {
+
+    return;
+
+  }
+
+
+  deck.audio.currentTime =
+    deck.cuePosition || 0;
+
+
+  deck.audio.pause();
+
+
+  deck.play.textContent =
+    "▶";
+
+
+  console.log(
+    "🎯 CUE Deck " + id
+  );
+
+}
+
+
+if ($("#cueA")) {
+
+  $("#cueA").addEventListener(
+    "click",
+    () => {
+
+      unlockAudio();
+
+      triggerCue("A");
+
+    }
+  );
+
+}
+
+
+if ($("#cueB")) {
+
+  $("#cueB").addEventListener(
+    "click",
+    () => {
+
+      unlockAudio();
+
+      triggerCue("B");
+
+    }
+  );
+
+}
 
 
 // ============================================================
@@ -263,22 +418,34 @@ audioB.addEventListener(
 
 function drawWave(canvas, id) {
 
-  if (!canvas) return;
+  if (!canvas) {
+    return;
+  }
+
 
   const ctx =
     canvas.getContext("2d");
 
+
   const ratio =
     window.devicePixelRatio || 1;
+
 
   const width =
     canvas.clientWidth * ratio;
 
+
   const height =
     canvas.clientHeight * ratio;
 
-  canvas.width = width;
-  canvas.height = height;
+
+  canvas.width =
+    width;
+
+
+  canvas.height =
+    height;
+
 
   ctx.clearRect(
     0,
@@ -287,15 +454,19 @@ function drawWave(canvas, id) {
     height
   );
 
+
   ctx.strokeStyle =
     id === "A"
       ? "#1598ff"
       : "#ff3e4d";
 
+
   ctx.lineWidth =
     2 * ratio;
 
+
   ctx.beginPath();
+
 
   for (
     let x = 0;
@@ -318,17 +489,25 @@ function drawWave(canvas, id) {
       height *
       0.18;
 
+
     if (x === 0) {
 
-      ctx.moveTo(x, y);
+      ctx.moveTo(
+        x,
+        y
+      );
 
     } else {
 
-      ctx.lineTo(x, y);
+      ctx.lineTo(
+        x,
+        y
+      );
 
     }
 
   }
+
 
   ctx.stroke();
 
@@ -339,6 +518,7 @@ drawWave(
   $("#waveA"),
   "A"
 );
+
 
 drawWave(
   $("#waveB"),
@@ -370,27 +550,30 @@ window.addEventListener(
 
 function updateMix() {
 
-  const crossElement =
+  const cross =
     $("#crossfader");
 
-  const volAElement =
+  const volA =
     $("#volA");
 
-  const volBElement =
+  const volB =
     $("#volB");
 
+
   if (
-    !crossElement ||
-    !volAElement ||
-    !volBElement
+    !cross ||
+    !volA ||
+    !volB
   ) {
+
     return;
+
   }
 
 
-  const cross =
+  const value =
     Number(
-      crossElement.value
+      cross.value
     );
 
 
@@ -399,7 +582,7 @@ function updateMix() {
       0,
       Math.min(
         1,
-        (1 - cross) / 2
+        (1 - value) / 2
       )
     );
 
@@ -409,7 +592,7 @@ function updateMix() {
       0,
       Math.min(
         1,
-        (1 + cross) / 2
+        (1 + value) / 2
       )
     );
 
@@ -417,14 +600,14 @@ function updateMix() {
   audioA.volume =
     volumeA *
     Number(
-      volAElement.value
+      volA.value
     );
 
 
   audioB.volume =
     volumeB *
     Number(
-      volBElement.value
+      volB.value
     );
 
 }
@@ -512,25 +695,39 @@ if ($("#pitchB")) {
 // JOG WHEELS
 // ============================================================
 
-function setupJog(id, audio) {
+function setupJog(
+  selector,
+  audio
+) {
 
-  const jog = $(id);
+  const jog =
+    $(selector);
 
-  if (!jog) return;
 
-  let touching = false;
+  if (!jog) {
+    return;
+  }
 
-  let lastX = 0;
+
+  let touching =
+    false;
+
+
+  let lastX =
+    0;
 
 
   jog.addEventListener(
     "pointerdown",
     event => {
 
-      touching = true;
+      touching =
+        true;
+
 
       lastX =
         event.clientX;
+
 
       jog.setPointerCapture(
         event.pointerId
@@ -544,7 +741,8 @@ function setupJog(id, audio) {
     "pointerup",
     () => {
 
-      touching = false;
+      touching =
+        false;
 
     }
   );
@@ -554,7 +752,8 @@ function setupJog(id, audio) {
     "pointercancel",
     () => {
 
-      touching = false;
+      touching =
+        false;
 
     }
   );
@@ -564,17 +763,23 @@ function setupJog(id, audio) {
     "pointermove",
     event => {
 
-      if (!touching) return;
+      if (!touching) {
+        return;
+      }
+
 
       const movement =
         event.clientX -
         lastX;
 
+
       lastX =
         event.clientX;
 
 
-      if (audio.paused) return;
+      if (audio.paused) {
+        return;
+      }
 
 
       audio.currentTime =
@@ -595,6 +800,7 @@ setupJog(
   audioA
 );
 
+
 setupJog(
   "#jogB",
   audioB
@@ -614,7 +820,9 @@ if ($("#recordBtn")) {
 
         $("#recordBtn")
           .classList
-          .toggle("active");
+          .toggle(
+            "active"
+          );
 
       }
     );
@@ -626,42 +834,54 @@ if ($("#recordBtn")) {
 // MIDI
 // ============================================================
 
-let midiAccess = null;
+let midiAccess =
+  null;
 
-let midiInputs = [];
+
+let midiInputs =
+  [];
+
+
+let midiConnected =
+  false;
 
 
 // ============================================================
 // DJ2GO2
 //
-// MESSAGE QUE TU AS DONNÉ :
+// D'après le message réel que TU as reçu:
 //
-// status  : 128
-// type    : 0x80
-// channel : 1
-// data1   : 0
-// data2   : 0
+// status 128
+// channel 1
+// data1 0
+// data2 0
 //
-// Donc :
-//
-// NOTE OFF
-// CHANNEL 1
-// NOTE 0
+// = NOTE OFF / CHANNEL 1 / NOTE 0
 //
 // ============================================================
 
 const DJ2GO2 = {
 
-  playA: {
-    channel: 1,
-    note: 0
-  }
+  PLAY_A_CHANNEL: 1,
+
+  PLAY_A_NOTE: 0
 
 };
 
 
 // ============================================================
-// CONNECTER MIDI
+// DERNIER MESSAGE
+//
+// Sert à éviter qu'un bouton qui envoie plusieurs messages
+// déclenche Play/Pause deux fois.
+// ============================================================
+
+let lastDJMessage =
+  0;
+
+
+// ============================================================
+// CONNEXION MIDI
 // ============================================================
 
 async function connectMIDI() {
@@ -692,15 +912,17 @@ async function connectMIDI() {
 
 
     console.log(
-      "===================================="
+      "================================"
     );
 
-    console.log(
-      "🎧 BLUEMIX DJ - MIDI"
-    );
 
     console.log(
-      "Entrées MIDI :",
+      "🎧 BLUEMIX DJ MIDI"
+    );
+
+
+    console.log(
+      "Nombre d'entrées :",
       midiInputs.length
     );
 
@@ -710,13 +932,15 @@ async function connectMIDI() {
     ) {
 
       console.log(
-        "❌ Aucun périphérique MIDI"
+        "❌ Aucun contrôleur MIDI"
       );
 
+
       showMIDIStatus(
-        "❌ AUCUN MIDI",
+        "❌ Aucun MIDI détecté",
         "#ff4050"
       );
+
 
       return;
 
@@ -727,15 +951,13 @@ async function connectMIDI() {
       input => {
 
         console.log(
-          "🎧 MIDI INPUT :",
-          input.name,
-          input.manufacturer || ""
+          "🎧 MIDI :",
+          input.name
         );
 
 
-        // IMPORTANT :
-        // on branche directement
-        // notre fonction de réception
+        // C'est cette ligne qui reçoit
+        // les boutons de la DJ2GO2.
 
         input.onmidimessage =
           handleMIDIMessage;
@@ -743,13 +965,6 @@ async function connectMIDI() {
       }
     );
 
-
-    console.log(
-      "===================================="
-    );
-
-
-    // Recherche DJ2GO2
 
     const dj2go2 =
       midiInputs.find(
@@ -761,19 +976,28 @@ async function connectMIDI() {
               ""
             ).toLowerCase();
 
+
           return (
-            name.includes("dj2go") ||
-            name.includes("numark")
+            name.includes(
+              "dj2go"
+            ) ||
+            name.includes(
+              "numark"
+            )
           );
 
         }
       );
 
 
+    midiConnected =
+      true;
+
+
     if (dj2go2) {
 
       console.log(
-        "🎧 NUMARK DJ2GO2 CONNECTÉE :",
+        "🎧 NUMARK DJ2GO2 TROUVÉE :",
         dj2go2.name
       );
 
@@ -786,33 +1010,37 @@ async function connectMIDI() {
     } else {
 
       showMIDIStatus(
-        "🎧 MIDI CONNECTÉ",
+        "🎧 CONTRÔLEUR MIDI CONNECTÉ",
         "#1598ff"
       );
 
     }
 
 
-    // Détection connexion /
-    // déconnexion
-
     midiAccess.onstatechange =
       event => {
 
         console.log(
-          "MIDI STATE :",
+          "MIDI STATE",
           event.port.name,
           event.port.state
         );
 
 
         if (
-          event.port.type === "input" &&
-          event.port.state === "connected"
+          event.port.type ===
+          "input"
         ) {
 
-          event.port.onmidimessage =
-            handleMIDIMessage;
+          if (
+            event.port.state ===
+            "connected"
+          ) {
+
+            event.port.onmidimessage =
+              handleMIDIMessage;
+
+          }
 
         }
 
@@ -822,7 +1050,7 @@ async function connectMIDI() {
   } catch (error) {
 
     console.error(
-      "❌ Erreur MIDI :",
+      "❌ Erreur MIDI",
       error
     );
 
@@ -856,7 +1084,9 @@ if ($("#midiBtn")) {
 // RÉCEPTION MIDI
 // ============================================================
 
-function handleMIDIMessage(event) {
+function handleMIDIMessage(
+  event
+) {
 
   const data =
     Array.from(
@@ -867,15 +1097,19 @@ function handleMIDIMessage(event) {
   if (
     data.length < 2
   ) {
+
     return;
+
   }
 
 
   const status =
     data[0];
 
+
   const data1 =
     data[1];
+
 
   const data2 =
     data[2] || 0;
@@ -884,9 +1118,6 @@ function handleMIDIMessage(event) {
   const type =
     status & 0xF0;
 
-
-  // MIDI channel interne = 0 à 15
-  // On ajoute 1 pour afficher 1 à 16.
 
   const channel =
     (status & 0x0F) + 1;
@@ -910,44 +1141,34 @@ function handleMIDIMessage(event) {
   );
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // NOTE ON
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0x90
   ) {
 
-    if (
-      data2 > 0
-    ) {
+    const pressed =
+      data2 > 0;
 
-      handleMIDINote(
-        channel,
-        data1,
-        data2,
-        true
-      );
 
-    } else {
+    handleMIDINote(
+      channel,
+      data1,
+      data2,
+      pressed
+    );
 
-      handleMIDINote(
-        channel,
-        data1,
-        data2,
-        false
-      );
-
-    }
 
     return;
 
   }
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // NOTE OFF
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0x80
@@ -960,14 +1181,15 @@ function handleMIDIMessage(event) {
       false
     );
 
+
     return;
 
   }
 
 
-  // ==========================================================
-  // CONTROL CHANGE
-  // ==========================================================
+  // ----------------------------------------------------------
+  // CC
+  // ----------------------------------------------------------
 
   if (
     type === 0xB0
@@ -979,21 +1201,22 @@ function handleMIDIMessage(event) {
       data2
     );
 
+
     return;
 
   }
 
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // PITCH BEND
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (
     type === 0xE0
   ) {
 
     const value =
-      data1 |
+      data1 +
       (data2 << 7);
 
 
@@ -1001,6 +1224,7 @@ function handleMIDIMessage(event) {
       channel,
       value
     );
+
 
     return;
 
@@ -1010,7 +1234,7 @@ function handleMIDIMessage(event) {
 
 
 // ============================================================
-// NOTES MIDI
+// NOTE MIDI
 // ============================================================
 
 function handleMIDINote(
@@ -1021,46 +1245,67 @@ function handleMIDINote(
 ) {
 
   console.log(
-    "🎹 NOTE MIDI",
+    "🎹 NOTE",
     {
-      channel: channel,
-      note: note,
-      velocity: velocity,
-      pressed: pressed
+      channel,
+      note,
+      velocity,
+      pressed
     }
   );
 
 
   // ==========================================================
   // PLAY A DJ2GO2
-  // ==========================================================
   //
-  // On utilise le NOTE OFF que tu as réellement capturé.
-  //
-  // channel = 1
-  // note = 0
-  //
+  // On utilise NOTE OFF car c'est le message réel que
+  // ta planche nous a montré.
   // ==========================================================
 
   if (
-    channel === DJ2GO2.playA.channel &&
-    note === DJ2GO2.playA.note &&
+    channel ===
+      DJ2GO2.PLAY_A_CHANNEL &&
+
+    note ===
+      DJ2GO2.PLAY_A_NOTE &&
+
     pressed === false
   ) {
 
+
+    // Petite protection anti-double déclenchement
+
+    const now =
+      Date.now();
+
+
+    if (
+      now - lastDJMessage <
+      100
+    ) {
+
+      return;
+
+    }
+
+
+    lastDJMessage =
+      now;
+
+
     console.log(
-      "🔥 DJ2GO2 → PLAY A"
+      "🔥🔥 DJ2GO2 PLAY A 🔥🔥"
     );
 
 
-    const playButton =
+    const button =
       $("#playA");
 
 
-    if (!playButton) {
+    if (!button) {
 
       console.error(
-        "❌ Le bouton #playA n'existe pas"
+        "❌ #playA introuvable"
       );
 
       return;
@@ -1068,35 +1313,44 @@ function handleMIDINote(
     }
 
 
-    console.log(
-      "✅ Bouton #playA trouvé"
-    );
+    // Déclenche exactement le même événement
+    // qu'un clic de souris.
+
+    button.click();
 
 
-    // IMPORTANT :
-    // on utilise le vrai clic du site.
+    // Animation du bouton
 
-    playButton.click();
-
-
-    // Animation
-
-    playButton.animate(
+    button.animate(
       [
         {
-          transform: "scale(1)",
-          filter: "brightness(1)"
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
         },
 
         {
-          transform: "scale(.85)",
-          filter: "brightness(2)"
+          transform:
+            "scale(.85)",
+          filter:
+            "brightness(2)"
         },
 
         {
-          transform: "scale(1)",
-          filter: "brightness(1)"
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
+        },
+
+        {
+          transform:
+            "scale(1)",
+          filter:
+            "brightness(1)"
         }
+
       ],
       {
         duration: 200
@@ -1115,18 +1369,12 @@ function handleMIDINote(
   }
 
 
-  // ==========================================================
-  // AUTRE NOTE
-  // ==========================================================
+  // Autres boutons pour l'instant
 
   console.log(
-    "🎹 NOTE NON MAPPÉE",
-    {
-      channel: channel,
-      note: note,
-      velocity: velocity,
-      pressed: pressed
-    }
+    "🎹 NOTE NON PROGRAMMÉE",
+    channel,
+    note
   );
 
 }
@@ -1145,38 +1393,40 @@ function handleMIDICC(
   console.log(
     "🎛️ MIDI CC",
     {
-      channel: channel,
-      controller: controller,
-      value: value
+      channel,
+      controller,
+      value
     }
   );
 
 
-  // Pour le moment :
-  // on affiche les vrais messages.
+  // Pour l'instant on ne change rien à ton interface.
+  // On affiche seulement les vrais messages de la board.
   //
-  // On ne met PAS de faux numéros.
+  // Cela permettra ensuite de mapper correctement :
   //
-  // Cela permettra de mapper précisément :
   // - crossfader
-  // - volume
+  // - volumes
   // - pitch
-  // - boutons
+  // - EQ
   // - jog
+  // - boutons
+  // etc.
 
 
   showMIDIStatus(
-    "🎛️ CC " +
+    "🎛️ MIDI CC " +
     controller +
-    " : " +
-    value
+    " = " +
+    value,
+    "#1598ff"
   );
 
 }
 
 
 // ============================================================
-// MIDI PITCH
+// PITCH MIDI
 // ============================================================
 
 function handleMIDIPitch(
@@ -1187,14 +1437,9 @@ function handleMIDIPitch(
   console.log(
     "🎚️ MIDI PITCH",
     {
-      channel: channel,
-      value: value
+      channel,
+      value
     }
-  );
-
-
-  showMIDIStatus(
-    "🎚️ PITCH"
   );
 
 }
@@ -1204,7 +1449,8 @@ function handleMIDIPitch(
 // MESSAGE MIDI À L'ÉCRAN
 // ============================================================
 
-let midiStatusTimer = null;
+let midiStatusTimer =
+  null;
 
 
 function showMIDIStatus(
@@ -1231,38 +1477,51 @@ function showMIDIStatus(
     status.style.position =
       "fixed";
 
+
     status.style.top =
       "82px";
+
 
     status.style.right =
       "15px";
 
+
     status.style.zIndex =
       "99999";
+
 
     status.style.padding =
       "10px 15px";
 
+
     status.style.background =
       "#06162e";
 
+
     status.style.border =
-      "1px solid " + color;
+      "1px solid " +
+      color;
+
 
     status.style.borderRadius =
       "7px";
 
+
     status.style.color =
       "#dcecff";
+
 
     status.style.fontFamily =
       "Arial,sans-serif";
 
+
     status.style.fontSize =
       "13px";
 
+
     status.style.boxShadow =
       "0 5px 20px #0008";
+
 
     document.body.appendChild(
       status
@@ -1307,7 +1566,9 @@ function showMIDIStatus(
 // ============================================================
 
 document
-  .querySelectorAll(".cuePad")
+  .querySelectorAll(
+    ".cuePad"
+  )
   .forEach(
     button => {
 
@@ -1318,15 +1579,18 @@ document
           button.animate(
             [
               {
-                transform: "scale(1)"
+                transform:
+                  "scale(1)"
               },
 
               {
-                transform: "scale(.9)"
+                transform:
+                  "scale(.9)"
               },
 
               {
-                transform: "scale(1)"
+                transform:
+                  "scale(1)"
               }
             ],
             {
@@ -1347,10 +1611,16 @@ document
 
 function updateClock() {
 
-  if (!$("#clock")) return;
+  const clock =
+    $("#clock");
 
 
-  $("#clock").textContent =
+  if (!clock) {
+    return;
+  }
+
+
+  clock.textContent =
     new Date().toLocaleTimeString(
       "fr-CA",
       {
@@ -1384,15 +1654,19 @@ console.log(
 );
 
 console.log(
-  "✅ JavaScript chargé"
+  "✅ APP.JS CHARGÉ"
 );
 
 console.log(
-  "🎧 MIDI prêt"
+  "🎧 MIDI PRÊT"
 );
 
 console.log(
-  "🎧 DJ2GO2 PLAY A = CH1 / NOTE 0"
+  "🎧 NUMARK DJ2GO2"
+);
+
+console.log(
+  "🎧 PLAY A = CHANNEL 1 / NOTE 0"
 );
 
 console.log(
