@@ -1,11 +1,5 @@
 // ============================================================
-// BLUEMIX DJ
-// APP.JS
-// ============================================================
-
-
-// ============================================================
-// OUTIL
+// BLUEMIX DJ - APP.JS
 // ============================================================
 
 const $ = selector => document.querySelector(selector);
@@ -20,7 +14,7 @@ const audioB = $("#audioB");
 
 
 // ============================================================
-// ÉTAT
+// ÉTAT DES DECKS
 // ============================================================
 
 const state = {
@@ -49,32 +43,6 @@ const state = {
 
 
 // ============================================================
-// AUDIO AUTORISÉ PAR LE NAVIGATEUR
-// ============================================================
-
-let audioUnlocked = false;
-
-
-function unlockAudio() {
-
-  if (audioUnlocked) {
-    return;
-  }
-
-  // On ne joue rien ici.
-  // Le premier clic utilisateur sur un bouton audio
-  // permettra au navigateur d'autoriser la lecture.
-
-  audioUnlocked = true;
-
-  console.log(
-    "🔊 Audio utilisateur activé"
-  );
-
-}
-
-
-// ============================================================
 // CHARGEMENT DES MUSIQUES
 // ============================================================
 
@@ -82,90 +50,68 @@ function setupDeck(id, fileSelector) {
 
   const input = $(fileSelector);
 
-  if (!input) {
-    return;
-  }
+  if (!input) return;
 
+  input.addEventListener("change", event => {
 
-  input.addEventListener(
-    "change",
-    event => {
+    const file = event.target.files[0];
 
-      const file =
-        event.target.files[0];
+    if (!file) return;
 
-      if (!file) {
-        return;
-      }
+    const deck = state[id];
 
+    // Nettoyer l'ancien fichier
+    if (deck.objectURL) {
 
-      const deck =
-        state[id];
-
-
-      // Libère éventuellement l'ancien fichier
-      if (
+      URL.revokeObjectURL(
         deck.objectURL
-      ) {
-
-        URL.revokeObjectURL(
-          deck.objectURL
-        );
-
-      }
-
-
-      deck.objectURL =
-        URL.createObjectURL(file);
-
-
-      deck.audio.src =
-        deck.objectURL;
-
-
-      deck.title.textContent =
-        file.name.replace(
-          /\.[^/.]+$/,
-          ""
-        );
-
-
-      deck.artist.textContent =
-        "Fichier local";
-
-
-      deck.cuePosition = 0;
-
-
-      deck.audio.load();
-
-
-      drawWave(
-        deck.wave,
-        id
-      );
-
-
-      console.log(
-        "🎵 Morceau chargé Deck " +
-        id +
-        ": " +
-        file.name
       );
 
     }
-  );
+
+    // Créer l'URL du nouveau fichier
+    deck.objectURL =
+      URL.createObjectURL(file);
+
+    deck.audio.src =
+      deck.objectURL;
+
+    deck.title.textContent =
+      file.name.replace(
+        /\.[^/.]+$/,
+        ""
+      );
+
+    deck.artist.textContent =
+      "Fichier local";
+
+    deck.cuePosition = 0;
+
+    deck.audio.load();
+
+    drawWave(
+      deck.wave,
+      id
+    );
+
+    console.log(
+      "🎵 Deck " + id +
+      " chargé : " +
+      file.name
+    );
+
+  });
 
 
-  // PLAY / PAUSE
+  // ==========================================================
+  // PLAY / PAUSE SOURIS
+  // ==========================================================
 
   if (state[id].play) {
 
     state[id].play.addEventListener(
       "click",
       () => {
-
-        unlockAudio();
 
         togglePlay(id);
 
@@ -204,9 +150,9 @@ function togglePlay(id) {
   }
 
 
-  // ----------------------------------------------------------
+  // ==========================================================
   // PAUSE
-  // ----------------------------------------------------------
+  // ==========================================================
 
   if (!deck.audio.paused) {
 
@@ -214,7 +160,6 @@ function togglePlay(id) {
 
     deck.play.textContent =
       "▶";
-
 
     console.log(
       "⏸ PAUSE Deck " + id
@@ -225,9 +170,9 @@ function togglePlay(id) {
   }
 
 
-  // ----------------------------------------------------------
+  // ==========================================================
   // PLAY
-  // ----------------------------------------------------------
+  // ==========================================================
 
   console.log(
     "▶ PLAY Deck " + id
@@ -249,11 +194,10 @@ function togglePlay(id) {
         deck.play.textContent =
           "❚❚";
 
-
         console.log(
-          "🔊 Lecture Deck " +
+          "🔊 AUDIO Deck " +
           id +
-          " OK"
+          " EN LECTURE"
         );
 
       })
@@ -262,13 +206,11 @@ function togglePlay(id) {
         deck.play.textContent =
           "▶";
 
-
         console.error(
-          "❌ Impossible de démarrer Deck " +
+          "❌ Erreur audio Deck " +
           id,
           error
         );
-
 
         if (
           error.name ===
@@ -276,14 +218,7 @@ function togglePlay(id) {
         ) {
 
           showMIDIStatus(
-            "👆 Clique une fois sur ▶ avec la souris",
-            "#ff4050"
-          );
-
-        } else {
-
-          showMIDIStatus(
-            "❌ Erreur audio",
+            "👆 Clique d'abord sur ▶ avec la souris",
             "#ff4050"
           );
 
@@ -297,7 +232,7 @@ function togglePlay(id) {
 
 
 // ============================================================
-// INITIALISATION DECKS
+// INITIALISATION
 // ============================================================
 
 setupDeck(
@@ -312,19 +247,15 @@ setupDeck(
 
 
 // ============================================================
-// FIN DES MORCEAUX
+// FIN DU MORCEAU
 // ============================================================
 
 audioA.addEventListener(
   "ended",
   () => {
 
-    if ($("#playA")) {
-
-      $("#playA").textContent =
-        "▶";
-
-    }
+    $("#playA").textContent =
+      "▶";
 
   }
 );
@@ -334,12 +265,8 @@ audioB.addEventListener(
   "ended",
   () => {
 
-    if ($("#playB")) {
-
-      $("#playB").textContent =
-        "▶";
-
-    }
+    $("#playB").textContent =
+      "▶";
 
   }
 );
@@ -354,24 +281,17 @@ function triggerCue(id) {
   const deck =
     state[id];
 
-
   if (!deck.audio.src) {
-
     return;
-
   }
-
 
   deck.audio.currentTime =
     deck.cuePosition || 0;
 
-
   deck.audio.pause();
-
 
   deck.play.textContent =
     "▶";
-
 
   console.log(
     "🎯 CUE Deck " + id
@@ -385,8 +305,6 @@ if ($("#cueA")) {
   $("#cueA").addEventListener(
     "click",
     () => {
-
-      unlockAudio();
 
       triggerCue("A");
 
@@ -402,8 +320,6 @@ if ($("#cueB")) {
     "click",
     () => {
 
-      unlockAudio();
-
       triggerCue("B");
 
     }
@@ -413,39 +329,30 @@ if ($("#cueB")) {
 
 
 // ============================================================
-// WAVEFORM
+// WAVEFORMS
 // ============================================================
 
 function drawWave(canvas, id) {
 
-  if (!canvas) {
-    return;
-  }
-
+  if (!canvas) return;
 
   const ctx =
     canvas.getContext("2d");
 
-
   const ratio =
     window.devicePixelRatio || 1;
-
 
   const width =
     canvas.clientWidth * ratio;
 
-
   const height =
     canvas.clientHeight * ratio;
-
 
   canvas.width =
     width;
 
-
   canvas.height =
     height;
-
 
   ctx.clearRect(
     0,
@@ -454,19 +361,15 @@ function drawWave(canvas, id) {
     height
   );
 
-
   ctx.strokeStyle =
     id === "A"
       ? "#1598ff"
       : "#ff3e4d";
 
-
   ctx.lineWidth =
     2 * ratio;
 
-
   ctx.beginPath();
-
 
   for (
     let x = 0;
@@ -489,7 +392,6 @@ function drawWave(canvas, id) {
       height *
       0.18;
 
-
     if (x === 0) {
 
       ctx.moveTo(
@@ -508,7 +410,6 @@ function drawWave(canvas, id) {
 
   }
 
-
   ctx.stroke();
 
 }
@@ -518,7 +419,6 @@ drawWave(
   $("#waveA"),
   "A"
 );
-
 
 drawWave(
   $("#waveB"),
@@ -559,7 +459,6 @@ function updateMix() {
   const volB =
     $("#volB");
 
-
   if (
     !cross ||
     !volA ||
@@ -570,12 +469,10 @@ function updateMix() {
 
   }
 
-
   const value =
     Number(
       cross.value
     );
-
 
   const volumeA =
     Math.max(
@@ -586,7 +483,6 @@ function updateMix() {
       )
     );
 
-
   const volumeB =
     Math.max(
       0,
@@ -596,13 +492,11 @@ function updateMix() {
       )
     );
 
-
   audioA.volume =
     volumeA *
     Number(
       volA.value
     );
-
 
   audioB.volume =
     volumeB *
@@ -650,7 +544,7 @@ updateMix();
 
 
 // ============================================================
-// PITCH
+// PITCH DECK A
 // ============================================================
 
 if ($("#pitchA")) {
@@ -671,6 +565,10 @@ if ($("#pitchA")) {
 
 }
 
+
+// ============================================================
+// PITCH DECK B
+// ============================================================
 
 if ($("#pitchB")) {
 
@@ -703,15 +601,10 @@ function setupJog(
   const jog =
     $(selector);
 
-
-  if (!jog) {
-    return;
-  }
-
+  if (!jog) return;
 
   let touching =
     false;
-
 
   let lastX =
     0;
@@ -724,10 +617,8 @@ function setupJog(
       touching =
         true;
 
-
       lastX =
         event.clientX;
-
 
       jog.setPointerCapture(
         event.pointerId
@@ -763,24 +654,16 @@ function setupJog(
     "pointermove",
     event => {
 
-      if (!touching) {
-        return;
-      }
-
+      if (!touching) return;
 
       const movement =
         event.clientX -
         lastX;
 
-
       lastX =
         event.clientX;
 
-
-      if (audio.paused) {
-        return;
-      }
-
+      if (audio.paused) return;
 
       audio.currentTime =
         Math.max(
@@ -799,7 +682,6 @@ setupJog(
   "#jogA",
   audioA
 );
-
 
 setupJog(
   "#jogB",
@@ -837,45 +719,37 @@ if ($("#recordBtn")) {
 let midiAccess =
   null;
 
-
 let midiInputs =
   [];
-
 
 let midiConnected =
   false;
 
 
 // ============================================================
-// DJ2GO2
+// NUMARK DJ2GO2
 //
-// D'après le message réel que TU as reçu:
+// PLAY GAUCHE
+// Channel 1
+// Note 0
 //
-// status 128
-// channel 1
-// data1 0
-// data2 0
-//
-// = NOTE OFF / CHANNEL 1 / NOTE 0
-//
+// PLAY DROITE
+// Channel 2
+// Note 0
 // ============================================================
 
 const DJ2GO2 = {
 
   PLAY_A_CHANNEL: 1,
+  PLAY_A_NOTE: 0,
 
-  PLAY_A_NOTE: 0
+  PLAY_B_CHANNEL: 2,
+  PLAY_B_NOTE: 0
 
 };
 
 
-// ============================================================
-// DERNIER MESSAGE
-//
-// Sert à éviter qu'un bouton qui envoie plusieurs messages
-// déclenche Play/Pause deux fois.
-// ============================================================
-
+// Protection contre double déclenchement
 let lastDJMessage =
   0;
 
@@ -915,14 +789,12 @@ async function connectMIDI() {
       "================================"
     );
 
-
     console.log(
       "🎧 BLUEMIX DJ MIDI"
     );
 
-
     console.log(
-      "Nombre d'entrées :",
+      "Entrées MIDI :",
       midiInputs.length
     );
 
@@ -935,12 +807,10 @@ async function connectMIDI() {
         "❌ Aucun contrôleur MIDI"
       );
 
-
       showMIDIStatus(
         "❌ Aucun MIDI détecté",
         "#ff4050"
       );
-
 
       return;
 
@@ -951,13 +821,9 @@ async function connectMIDI() {
       input => {
 
         console.log(
-          "🎧 MIDI :",
+          "🎧 MIDI connecté :",
           input.name
         );
-
-
-        // C'est cette ligne qui reçoit
-        // les boutons de la DJ2GO2.
 
         input.onmidimessage =
           handleMIDIMessage;
@@ -975,7 +841,6 @@ async function connectMIDI() {
               input.name ||
               ""
             ).toLowerCase();
-
 
           return (
             name.includes(
@@ -1001,7 +866,6 @@ async function connectMIDI() {
         dj2go2.name
       );
 
-
       showMIDIStatus(
         "🎧 NUMARK DJ2GO2 CONNECTÉE",
         "#1598ff"
@@ -1025,7 +889,6 @@ async function connectMIDI() {
           event.port.name,
           event.port.state
         );
-
 
         if (
           event.port.type ===
@@ -1053,7 +916,6 @@ async function connectMIDI() {
       "❌ Erreur MIDI",
       error
     );
-
 
     alert(
       "Impossible d'ouvrir le MIDI.\n\n" +
@@ -1093,7 +955,6 @@ function handleMIDIMessage(
       event.data
     );
 
-
   if (
     data.length < 2
   ) {
@@ -1106,10 +967,8 @@ function handleMIDIMessage(
   const status =
     data[0];
 
-
   const data1 =
     data[1];
-
 
   const data2 =
     data[2] || 0;
@@ -1127,23 +986,19 @@ function handleMIDIMessage(
     "🎧 MIDI",
     {
       status: status,
-
       type:
         "0x" +
         type.toString(16),
-
       channel: channel,
-
       data1: data1,
-
       data2: data2
     }
   );
 
 
-  // ----------------------------------------------------------
+  // ==========================================================
   // NOTE ON
-  // ----------------------------------------------------------
+  // ==========================================================
 
   if (
     type === 0x90
@@ -1152,7 +1007,6 @@ function handleMIDIMessage(
     const pressed =
       data2 > 0;
 
-
     handleMIDINote(
       channel,
       data1,
@@ -1160,15 +1014,14 @@ function handleMIDIMessage(
       pressed
     );
 
-
     return;
 
   }
 
 
-  // ----------------------------------------------------------
+  // ==========================================================
   // NOTE OFF
-  // ----------------------------------------------------------
+  // ==========================================================
 
   if (
     type === 0x80
@@ -1181,15 +1034,14 @@ function handleMIDIMessage(
       false
     );
 
-
     return;
 
   }
 
 
-  // ----------------------------------------------------------
-  // CC
-  // ----------------------------------------------------------
+  // ==========================================================
+  // CONTROL CHANGE
+  // ==========================================================
 
   if (
     type === 0xB0
@@ -1201,15 +1053,14 @@ function handleMIDIMessage(
       data2
     );
 
-
     return;
 
   }
 
 
-  // ----------------------------------------------------------
+  // ==========================================================
   // PITCH BEND
-  // ----------------------------------------------------------
+  // ==========================================================
 
   if (
     type === 0xE0
@@ -1219,12 +1070,10 @@ function handleMIDIMessage(
       data1 +
       (data2 << 7);
 
-
     handleMIDIPitch(
       channel,
       value
     );
-
 
     return;
 
@@ -1234,7 +1083,7 @@ function handleMIDIMessage(
 
 
 // ============================================================
-// NOTE MIDI
+// NOTES MIDI
 // ============================================================
 
 function handleMIDINote(
@@ -1256,10 +1105,7 @@ function handleMIDINote(
 
 
   // ==========================================================
-  // PLAY A DJ2GO2
-  //
-  // On utilise NOTE OFF car c'est le message réel que
-  // ta planche nous a montré.
+  // PLAY A
   // ==========================================================
 
   if (
@@ -1272,12 +1118,8 @@ function handleMIDINote(
     pressed === false
   ) {
 
-
-    // Petite protection anti-double déclenchement
-
     const now =
       Date.now();
-
 
     if (
       now - lastDJMessage <
@@ -1288,13 +1130,12 @@ function handleMIDINote(
 
     }
 
-
     lastDJMessage =
       now;
 
 
     console.log(
-      "🔥🔥 DJ2GO2 PLAY A 🔥🔥"
+      "🔥 DJ2GO2 → PLAY A"
     );
 
 
@@ -1313,42 +1154,26 @@ function handleMIDINote(
     }
 
 
-    // Déclenche exactement le même événement
-    // qu'un clic de souris.
+    // Même action qu'un clic souris
 
     button.click();
 
 
-    // Animation du bouton
-
     button.animate(
       [
         {
-          transform:
-            "scale(1)",
-          filter:
-            "brightness(1)"
+          transform: "scale(1)",
+          filter: "brightness(1)"
         },
 
         {
-          transform:
-            "scale(.85)",
-          filter:
-            "brightness(2)"
+          transform: "scale(.85)",
+          filter: "brightness(2)"
         },
 
         {
-          transform:
-            "scale(1)",
-          filter:
-            "brightness(1)"
-        },
-
-        {
-          transform:
-            "scale(1)",
-          filter:
-            "brightness(1)"
+          transform: "scale(1)",
+          filter: "brightness(1)"
         }
 
       ],
@@ -1369,12 +1194,108 @@ function handleMIDINote(
   }
 
 
-  // Autres boutons pour l'instant
+  // ==========================================================
+  // PLAY B
+  // ==========================================================
+
+  if (
+    channel ===
+      DJ2GO2.PLAY_B_CHANNEL &&
+
+    note ===
+      DJ2GO2.PLAY_B_NOTE &&
+
+    pressed === false
+  ) {
+
+    const now =
+      Date.now();
+
+    if (
+      now - lastDJMessage <
+      100
+    ) {
+
+      return;
+
+    }
+
+    lastDJMessage =
+      now;
+
+
+    console.log(
+      "🔥 DJ2GO2 → PLAY B"
+    );
+
+
+    const button =
+      $("#playB");
+
+
+    if (!button) {
+
+      console.error(
+        "❌ #playB introuvable"
+      );
+
+      return;
+
+    }
+
+
+    // Même action qu'un clic souris
+
+    button.click();
+
+
+    button.animate(
+      [
+        {
+          transform: "scale(1)",
+          filter: "brightness(1)"
+        },
+
+        {
+          transform: "scale(.85)",
+          filter: "brightness(2)"
+        },
+
+        {
+          transform: "scale(1)",
+          filter: "brightness(1)"
+        }
+
+      ],
+      {
+        duration: 200
+      }
+    );
+
+
+    showMIDIStatus(
+      "▶ DJ2GO2 → PLAY B",
+      "#ff4050"
+    );
+
+
+    return;
+
+  }
+
+
+  // ==========================================================
+  // NOTE PAS ENCORE PROGRAMMÉE
+  // ==========================================================
 
   console.log(
-    "🎹 NOTE NON PROGRAMMÉE",
-    channel,
-    note
+    "🎹 NOTE NON MAPPÉE",
+    {
+      channel,
+      note,
+      velocity,
+      pressed
+    }
   );
 
 }
@@ -1400,20 +1321,6 @@ function handleMIDICC(
   );
 
 
-  // Pour l'instant on ne change rien à ton interface.
-  // On affiche seulement les vrais messages de la board.
-  //
-  // Cela permettra ensuite de mapper correctement :
-  //
-  // - crossfader
-  // - volumes
-  // - pitch
-  // - EQ
-  // - jog
-  // - boutons
-  // etc.
-
-
   showMIDIStatus(
     "🎛️ MIDI CC " +
     controller +
@@ -1426,7 +1333,7 @@ function handleMIDICC(
 
 
 // ============================================================
-// PITCH MIDI
+// MIDI PITCH
 // ============================================================
 
 function handleMIDIPitch(
@@ -1469,59 +1376,45 @@ function showMIDIStatus(
         "div"
       );
 
-
     status.id =
       "midiStatus";
-
 
     status.style.position =
       "fixed";
 
-
     status.style.top =
       "82px";
-
 
     status.style.right =
       "15px";
 
-
     status.style.zIndex =
       "99999";
-
 
     status.style.padding =
       "10px 15px";
 
-
     status.style.background =
       "#06162e";
-
 
     status.style.border =
       "1px solid " +
       color;
 
-
     status.style.borderRadius =
       "7px";
-
 
     status.style.color =
       "#dcecff";
 
-
     status.style.fontFamily =
       "Arial,sans-serif";
-
 
     status.style.fontSize =
       "13px";
 
-
     status.style.boxShadow =
       "0 5px 20px #0008";
-
 
     document.body.appendChild(
       status
@@ -1533,10 +1426,8 @@ function showMIDIStatus(
   status.style.borderColor =
     color;
 
-
   status.textContent =
     message;
-
 
   status.style.display =
     "block";
@@ -1614,10 +1505,7 @@ function updateClock() {
   const clock =
     $("#clock");
 
-
-  if (!clock) {
-    return;
-  }
+  if (!clock) return;
 
 
   clock.textContent =
@@ -1667,6 +1555,10 @@ console.log(
 
 console.log(
   "🎧 PLAY A = CHANNEL 1 / NOTE 0"
+);
+
+console.log(
+  "🎧 PLAY B = CHANNEL 2 / NOTE 0"
 );
 
 console.log(
