@@ -1,30 +1,27 @@
-// ======================================================
-// BlueMix DJ
-// Application principale
-// ======================================================
+/* ================================================= */
+/* BLUEMIX DJ */
+/* MIDI + AUDIO */
+/* ================================================= */
 
 
-// ======================================================
-// OUTILS
-// ======================================================
+/* ================================================= */
+/* UTILITAIRE */
+/* ================================================= */
 
 const $ = selector => document.querySelector(selector);
 
-const $$ = selector =>
-  [...document.querySelectorAll(selector)];
 
-
-// ======================================================
-// AUDIO
-// ======================================================
+/* ================================================= */
+/* AUDIO */
+/* ================================================= */
 
 const audioA = $("#audioA");
 const audioB = $("#audioB");
 
 
-// ======================================================
-// ÉTAT DES DECKS
-// ======================================================
+/* ================================================= */
+/* ETAT DES DECKS */
+/* ================================================= */
 
 const state = {
 
@@ -40,23 +37,10 @@ const state = {
 
     play: $("#playA"),
 
-    cue: $("#cueA"),
-
-    pitch: $("#pitchA"),
-
-    jog: $("#jogA"),
-
-    cuePoint: 0,
-
-    hotCues: {},
-
-    loopSize: 4,
-
-    loopIn: null,
-
-    loopOut: null
+    pitch: $("#pitchA")
 
   },
+
 
   B: {
 
@@ -70,34 +54,19 @@ const state = {
 
     play: $("#playB"),
 
-    cue: $("#cueB"),
-
-    pitch: $("#pitchB"),
-
-    jog: $("#jogB"),
-
-    cuePoint: 0,
-
-    hotCues: {},
-
-    loopSize: 4,
-
-    loopIn: null,
-
-    loopOut: null
+    pitch: $("#pitchB")
 
   }
 
 };
 
 
-// ======================================================
-// CHARGEMENT DES MUSIQUES
-// ======================================================
 
-function setupDeck(id, fileInput) {
+/* ================================================= */
+/* CHARGEMENT DES MUSIQUES */
+/* ================================================= */
 
-  const deck = state[id];
+function setupDeck(id, fileInput){
 
   $(fileInput).addEventListener(
     "change",
@@ -106,16 +75,11 @@ function setupDeck(id, fileInput) {
       const file =
         event.target.files[0];
 
-      if (!file) return;
+      if(!file) return;
 
 
-      if (deck.audio.src) {
-
-        URL.revokeObjectURL(
-          deck.audio.src
-        );
-
-      }
+      const deck =
+        state[id];
 
 
       deck.audio.src =
@@ -136,11 +100,6 @@ function setupDeck(id, fileInput) {
       deck.audio.load();
 
 
-      deck.cuePoint = 0;
-
-      deck.hotCues = {};
-
-
       drawWave(
         deck.wave,
         id
@@ -150,9 +109,10 @@ function setupDeck(id, fileInput) {
   );
 
 
-  // PLAY / PAUSE
 
-  deck.play.addEventListener(
+  /* PLAY */
+
+  state[id].play.addEventListener(
     "click",
     () => {
 
@@ -161,162 +121,43 @@ function setupDeck(id, fileInput) {
     }
   );
 
-
-  // CUE
-
-  deck.cue.addEventListener(
-    "click",
-    () => {
-
-      cueDeck(id);
-
-    }
-  );
-
-
-  // AUDIO EVENTS
-
-  deck.audio.addEventListener(
-    "play",
-    () => {
-
-      deck.play.textContent =
-        "❚❚";
-
-      deck.play.classList.add(
-        "active"
-      );
-
-    }
-  );
-
-
-  deck.audio.addEventListener(
-    "pause",
-    () => {
-
-      deck.play.textContent =
-        "▶";
-
-      deck.play.classList.remove(
-        "active"
-      );
-
-    }
-  );
-
-
-  deck.audio.addEventListener(
-    "ended",
-    () => {
-
-      deck.play.textContent =
-        "▶";
-
-      deck.play.classList.remove(
-        "active"
-      );
-
-    }
-  );
-
-
-  // LOOP
-
-  deck.audio.addEventListener(
-    "timeupdate",
-    () => {
-
-      if (
-        deck.loopIn !== null &&
-        deck.loopOut !== null &&
-        deck.audio.currentTime >= deck.loopOut
-      ) {
-
-        deck.audio.currentTime =
-          deck.loopIn;
-
-      }
-
-    }
-  );
-
 }
 
 
-// ======================================================
-// PLAY / PAUSE
-// ======================================================
 
-async function togglePlay(id) {
+function togglePlay(id){
 
-  const deck = state[id];
-
-  if (!deck.audio.src) {
-
-    console.log(
-      `Deck ${id}: aucun morceau chargé.`
-    );
-
-    return;
-
-  }
+  const deck =
+    state[id];
 
 
-  try {
+  if(deck.audio.paused){
 
-    if (deck.audio.paused) {
+    deck.audio.play()
+      .catch(error => {
 
-      await deck.audio.play();
+        console.warn(
+          "Lecture impossible:",
+          error
+        );
 
-    } else {
+      });
 
-      deck.audio.pause();
+    deck.play.textContent =
+      "❚❚";
 
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Erreur audio:",
-      error
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// CUE
-// ======================================================
-
-function cueDeck(id) {
-
-  const deck = state[id];
-
-  if (!deck.audio.src) return;
-
-
-  if (!deck.audio.paused) {
+  }else{
 
     deck.audio.pause();
 
+    deck.play.textContent =
+      "▶";
+
   }
-
-
-  deck.audio.currentTime =
-    Math.max(
-      0,
-      deck.cuePoint
-    );
 
 }
 
 
-// ======================================================
-// INITIALISATION
-// ======================================================
 
 setupDeck(
   "A",
@@ -329,13 +170,52 @@ setupDeck(
 );
 
 
-// ======================================================
-// WAVEFORM
-// ======================================================
 
-function drawWave(canvas, id) {
+/* ================================================= */
+/* CUE */
+/* ================================================= */
 
-  if (!canvas) return;
+function cueDeck(id){
+
+  const deck =
+    state[id];
+
+
+  if(
+    !deck.audio.src ||
+    deck.audio.readyState < 1
+  ){
+
+    return;
+
+  }
+
+
+  deck.audio.currentTime = 0;
+
+}
+
+
+$("#cueA").addEventListener(
+  "click",
+  () => cueDeck("A")
+);
+
+
+$("#cueB").addEventListener(
+  "click",
+  () => cueDeck("B")
+);
+
+
+
+/* ================================================= */
+/* WAVEFORM */
+/* ================================================= */
+
+function drawWave(canvas,id){
+
+  if(!canvas) return;
 
 
   const ctx =
@@ -343,17 +223,15 @@ function drawWave(canvas, id) {
 
 
   const width =
-    canvas.clientWidth *
-    devicePixelRatio;
+    canvas.width =
+      canvas.clientWidth *
+      devicePixelRatio;
 
 
   const height =
-    canvas.clientHeight *
-    devicePixelRatio;
-
-
-  canvas.width = width;
-  canvas.height = height;
+    canvas.height =
+      canvas.clientHeight *
+      devicePixelRatio;
 
 
   ctx.clearRect(
@@ -371,24 +249,33 @@ function drawWave(canvas, id) {
 
 
   ctx.lineWidth =
-    2 * devicePixelRatio;
+    2 *
+    devicePixelRatio;
 
 
   ctx.beginPath();
 
 
-  for (
+  for(
     let x = 0;
     x < width;
     x++
-  ) {
+  ){
 
     const y =
       height / 2 +
-      Math.sin(x * 0.055) *
-      height * 0.16 +
-      Math.sin(x * 0.013) *
-      height * 0.18;
+
+      Math.sin(
+        x * 0.055
+      ) *
+      height *
+      0.16 +
+
+      Math.sin(
+        x * 0.013
+      ) *
+      height *
+      0.18;
 
 
     ctx.lineTo(
@@ -404,10 +291,12 @@ function drawWave(canvas, id) {
 }
 
 
+
 drawWave(
   $("#waveA"),
   "A"
 );
+
 
 drawWave(
   $("#waveB"),
@@ -433,11 +322,12 @@ window.addEventListener(
 );
 
 
-// ======================================================
-// MIXER
-// ======================================================
 
-function updateMix() {
+/* ================================================= */
+/* CROSSFADER */
+/* ================================================= */
+
+function updateMix(){
 
   const cross =
     Number(
@@ -502,102 +392,62 @@ $("#volB")
   );
 
 
-$("#masterVolume")
-  .addEventListener(
-    "input",
-    event => {
-
-      const value =
-        Number(event.target.value);
-
-
-      audioA.volume =
-        Math.min(
-          audioA.volume,
-          value
-        );
-
-      audioB.volume =
-        Math.min(
-          audioB.volume,
-          value
-        );
-
-    }
-  );
-
-
 updateMix();
 
 
-// ======================================================
-// PITCH
-// ======================================================
 
-function updatePitch(
-  id,
-  value
-) {
+/* ================================================= */
+/* PITCH */
+/* ================================================= */
 
-  const deck =
-    state[id];
+$("#pitchA").addEventListener(
+  "input",
+  event => {
 
-  const pitch =
-    Number(value);
-
-
-  deck.audio.playbackRate =
-    1 + pitch / 100;
-
-}
-
-
-$("#pitchA")
-  .addEventListener(
-    "input",
-    event => {
-
-      updatePitch(
-        "A",
+    audioA.playbackRate =
+      1 +
+      Number(
         event.target.value
-      );
+      ) / 100;
 
-    }
-  );
+  }
+);
 
 
-$("#pitchB")
-  .addEventListener(
-    "input",
-    event => {
+$("#pitchB").addEventListener(
+  "input",
+  event => {
 
-      updatePitch(
-        "B",
+    audioB.playbackRate =
+      1 +
+      Number(
         event.target.value
-      );
+      ) / 100;
 
-    }
-  );
+  }
+);
 
 
-// ======================================================
-// JOG WHEELS
-// ======================================================
+
+/* ================================================= */
+/* JOG WHEELS */
+/* ================================================= */
 
 function setupJog(
-  id,
+  selector,
   audio
-) {
+){
 
   const jog =
-    $(id);
-
-  if (!jog) return;
+    $(selector);
 
 
-  let touching = false;
+  let touching =
+    false;
 
-  let lastX = 0;
+
+  let lastX =
+    0;
 
 
   jog.addEventListener(
@@ -609,10 +459,6 @@ function setupJog(
       lastX =
         event.clientX;
 
-      jog.classList.add(
-        "active"
-      );
-
       jog.setPointerCapture(
         event.pointerId
       );
@@ -623,21 +469,9 @@ function setupJog(
 
   jog.addEventListener(
     "pointerup",
-    event => {
+    () => {
 
       touching = false;
-
-      jog.classList.remove(
-        "active"
-      );
-
-      try {
-
-        jog.releasePointerCapture(
-          event.pointerId
-        );
-
-      } catch {}
 
     }
   );
@@ -649,10 +483,6 @@ function setupJog(
 
       touching = false;
 
-      jog.classList.remove(
-        "active"
-      );
-
     }
   );
 
@@ -661,7 +491,7 @@ function setupJog(
     "pointermove",
     event => {
 
-      if (!touching) return;
+      if(!touching) return;
 
       const movement =
         event.clientX -
@@ -672,23 +502,22 @@ function setupJog(
         event.clientX;
 
 
-      if (!audio.src) return;
+      if(audio.paused)
+        return;
 
 
       audio.currentTime =
         Math.max(
           0,
-          Math.min(
-            audio.duration || Infinity,
-            audio.currentTime +
-            movement * 0.02
-          )
+          audio.currentTime +
+          movement * 0.02
         );
 
     }
   );
 
 }
+
 
 
 setupJog(
@@ -696,1031 +525,367 @@ setupJog(
   audioA
 );
 
+
 setupJog(
   "#jogB",
   audioB
 );
 
 
-// ======================================================
-// CUE POINT
-// ======================================================
 
-audioA.addEventListener(
-  "loadedmetadata",
+/* ================================================= */
+/* REC */
+/* ================================================= */
+
+$("#recordBtn").addEventListener(
+  "click",
   () => {
 
-    state.A.cuePoint = 0;
+    $("#recordBtn")
+      .classList
+      .toggle("active");
 
   }
 );
 
 
-audioB.addEventListener(
-  "loadedmetadata",
-  () => {
 
-    state.B.cuePoint = 0;
-
-  }
-);
-
-
-// ======================================================
-// HOT CUES
-// ======================================================
-
-$$(".cuePad").forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const deckId =
-          button.dataset.deck;
-
-        const cueNumber =
-          button.dataset.cue;
-
-        setHotCue(
-          deckId,
-          cueNumber,
-          button
-        );
-
-      }
-    );
-
-  }
-);
-
-
-function setHotCue(
-  deckId,
-  cueNumber,
-  button
-) {
-
-  const deck =
-    state[deckId];
-
-
-  if (!deck.audio.src) return;
-
-
-  const existing =
-    deck.hotCues[cueNumber];
-
-
-  if (
-    existing !== undefined
-  ) {
-
-    deck.audio.currentTime =
-      existing;
-
-  } else {
-
-    deck.hotCues[cueNumber] =
-      deck.audio.currentTime;
-
-  }
-
-
-  button.classList.add(
-    "active"
-  );
-
-
-  button.animate(
-    [
-      {
-        transform:
-          "scale(1)"
-      },
-
-      {
-        transform:
-          "scale(.9)"
-      },
-
-      {
-        transform:
-          "scale(1)"
-      }
-
-    ],
-    {
-      duration: 150
-    }
-  );
-
-}
-
-
-// ======================================================
-// LOOP
-// ======================================================
-
-$$(".loopPlus").forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const id =
-          button.dataset.deck;
-
-        state[id].loopSize =
-          Math.min(
-            32,
-            state[id].loopSize * 2
-          );
-
-        updateLoopDisplay(id);
-
-      }
-    );
-
-  }
-);
-
-
-$$(".loopMinus").forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const id =
-          button.dataset.deck;
-
-        state[id].loopSize =
-          Math.max(
-            1,
-            state[id].loopSize / 2
-          );
-
-        updateLoopDisplay(id);
-
-      }
-    );
-
-  }
-);
-
-
-function updateLoopDisplay(id) {
-
-  $(`#loop${id}`)
-    .textContent =
-    state[id].loopSize;
-
-}
-
-
-$$(".loopIn").forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const id =
-          button.dataset.deck;
-
-        const deck =
-          state[id];
-
-        deck.loopIn =
-          deck.audio.currentTime;
-
-      }
-    );
-
-  }
-);
-
-
-$$(".loopOut").forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const id =
-          button.dataset.deck;
-
-        const deck =
-          state[id];
-
-        deck.loopOut =
-          deck.audio.currentTime;
-
-      }
-    );
-
-  }
-);
-
-
-// ======================================================
-// SYNC
-// ======================================================
-
-function syncDeck(id) {
-
-  const deck =
-    state[id];
-
-  const other =
-    state[id === "A" ? "B" : "A"];
-
-
-  if (!deck.audio.src) return;
-
-
-  if (
-    other.audio.src &&
-    other.audio.playbackRate
-  ) {
-
-    deck.audio.playbackRate =
-      other.audio.playbackRate;
-
-  }
-
-}
-
-
-$("#syncA")
-  .addEventListener(
-    "click",
-    () => syncDeck("A")
-  );
-
-
-$("#syncB")
-  .addEventListener(
-    "click",
-    () => syncDeck("B")
-  );
-
-
-// ======================================================
-// REC
-// ======================================================
-
-$("#recordBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      $("#recordBtn")
-        .classList
-        .toggle("active");
-
-    }
-  );
-
-
-// ======================================================
-// FX
-// ======================================================
-
-$("#filterOn")
-  .addEventListener(
-    "click",
-    event => {
-
-      event.target
-        .classList
-        .toggle("active");
-
-    }
-  );
-
-
-$("#echoOn")
-  .addEventListener(
-    "click",
-    event => {
-
-      event.target
-        .classList
-        .toggle("active");
-
-    }
-  );
-
-
-// ======================================================
-// SAMPLER
-// ======================================================
-
-$$("[data-sampler]").forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        button.classList.add(
-          "active"
-        );
-
-        setTimeout(
-          () => {
-
-            button.classList.remove(
-              "active"
-            );
-
-          },
-          150
-        );
-
-      }
-    );
-
-  }
-);
-
-
-// ======================================================
-// HORLOGE
-// ======================================================
-
-function updateClock() {
-
-  $("#clock")
-    .textContent =
-    new Date().toLocaleTimeString(
-      "fr-CA",
-      {
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-
-}
-
-
-setInterval(
-  updateClock,
-  1000
-);
-
-
-updateClock();
-
-
-// ======================================================
-// ======================================================
-// MIDI ENGINE
-// ======================================================
-// ======================================================
+/* ================================================= */
+/* MIDI */
+/* ================================================= */
 
 let midiAccess = null;
 
-let midiInput = null;
+let selectedMidiInput = null;
 
-let midiOutput = null;
+let midiLearnMode = false;
 
-let midiLastMessage = null;
-
-let midiLearningAction = null;
+let midiLearningElement = null;
 
 
-// ======================================================
-// ACTIONS MIDI DISPONIBLES
-// ======================================================
+/*
+   Les mappings sont sauvegardés
+   dans localStorage.
+*/
 
-const midiActions = {
-
-  playA: {
-    name: "PLAY Deck A",
-    type: "button"
-  },
-
-  cueA: {
-    name: "CUE Deck A",
-    type: "button"
-  },
-
-  playB: {
-    name: "PLAY Deck B",
-    type: "button"
-  },
-
-  cueB: {
-    name: "CUE Deck B",
-    type: "button"
-  },
-
-  volA: {
-    name: "Volume Deck A",
-    type: "slider"
-  },
-
-  volB: {
-    name: "Volume Deck B",
-    type: "slider"
-  },
-
-  crossfader: {
-    name: "Crossfader",
-    type: "slider"
-  },
-
-  pitchA: {
-    name: "Pitch Deck A",
-    type: "slider"
-  },
-
-  pitchB: {
-    name: "Pitch Deck B",
-    type: "slider"
-  },
-
-  cueA1: {
-    name: "Hot Cue A 1",
-    type: "button"
-  },
-
-  cueA2: {
-    name: "Hot Cue A 2",
-    type: "button"
-  },
-
-  cueA3: {
-    name: "Hot Cue A 3",
-    type: "button"
-  },
-
-  cueA4: {
-    name: "Hot Cue A 4",
-    type: "button"
-  },
-
-  cueB1: {
-    name: "Hot Cue B 1",
-    type: "button"
-  },
-
-  cueB2: {
-    name: "Hot Cue B 2",
-    type: "button"
-  },
-
-  cueB3: {
-    name: "Hot Cue B 3",
-    type: "button"
-  },
-
-  cueB4: {
-    name: "Hot Cue B 4",
-    type: "button"
-  }
-
-};
-
-
-// ======================================================
-// CHARGER LE MAPPING
-// ======================================================
-
-let midiMapping =
+let midiMappings =
   JSON.parse(
     localStorage.getItem(
-      "BlueMixDJ_MIDI"
+      "bluemixMidiMappings"
     ) || "{}"
   );
 
 
-// ======================================================
-// IDENTIFIANT MESSAGE MIDI
-// ======================================================
 
-function midiMessageId(
-  type,
-  channel,
-  control
-) {
+/* ================================================= */
+/* OUVRIR LE PANEL MIDI */
+/* ================================================= */
 
-  return [
-    type,
-    channel,
-    control
-  ].join(":");
+$("#midiBtn").addEventListener(
+  "click",
+  async () => {
 
-}
+    $("#midiPanel")
+      .classList
+      .remove("hidden");
 
 
-// ======================================================
-// CRÉER LE PANNEAU MIDI
-// ======================================================
-
-function createMidiPanel() {
-
-  if ($(".midiPanel")) return;
-
-
-  const panel =
-    document.createElement("div");
-
-  panel.className =
-    "midiPanel";
-
-
-  panel.innerHTML = `
-
-    <div class="midiBox">
-
-      <h2>🎛️ MIDI BlueMix DJ</h2>
-
-      <div
-        class="midiStatus"
-        id="midiStatus"
-      >
-        MIDI non connecté
-      </div>
-
-      <div id="midiDevices"></div>
-
-      <div
-        class="midiMessage"
-        id="midiMessage"
-      >
-        Appuie sur un bouton de ta planche
-        pour voir son message MIDI.
-      </div>
-
-      <h3>
-        MIDI LEARN
-      </h3>
-
-      <p>
-        Clique sur une commande ci-dessous,
-        puis bouge le bouton, fader ou jog
-        correspondant sur ta planche DJ.
-      </p>
-
-      <div
-        class="midiLearnGrid"
-        id="midiLearnGrid"
-      ></div>
-
-      <button
-        class="midiClose"
-        id="midiClose"
-      >
-        FERMER
-      </button>
-
-    </div>
-
-  `;
-
-
-  document.body.appendChild(
-    panel
-  );
-
-
-  $("#midiClose")
-    .addEventListener(
-      "click",
-      closeMidiPanel
-    );
-
-
-  panel.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target === panel
-      ) {
-
-        closeMidiPanel();
-
-      }
-
-    }
-  );
-
-
-  createMidiLearnButtons();
-
-}
-
-
-// ======================================================
-// BOUTONS MIDI LEARN
-// ======================================================
-
-function createMidiLearnButtons() {
-
-  const container =
-    $("#midiLearnGrid");
-
-  if (!container) return;
-
-
-  container.innerHTML = "";
-
-
-  Object.entries(
-    midiActions
-  ).forEach(
-    ([action, info]) => {
-
-      const button =
-        document.createElement("button");
-
-
-      button.className =
-        "midiLearnButton";
-
-
-      button.dataset.action =
-        action;
-
-
-      const mapping =
-        midiMapping[action];
-
-
-      button.innerHTML =
-        `${info.name}<br>
-        <small>
-        ${
-          mapping
-            ? mappingText(mapping)
-            : "Non assigné"
-        }
-        </small>`;
-
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          startMidiLearn(
-            action,
-            button
-          );
-
-        }
-      );
-
-
-      container.appendChild(
-        button
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// TEXTE DU MAPPING
-// ======================================================
-
-function mappingText(
-  mapping
-) {
-
-  return `Type ${mapping.type}
-  / CH ${mapping.channel}
-  / ${mapping.control}`;
-
-}
-
-
-// ======================================================
-// MIDI LEARN
-// ======================================================
-
-function startMidiLearn(
-  action,
-  button
-) {
-
-  if (
-    midiLearningAction
-  ) {
-
-    return;
+    await connectMIDI();
 
   }
+);
 
 
-  midiLearningAction =
-    action;
 
+/* ================================================= */
+/* FERMER PANEL */
+/* ================================================= */
 
-  button.classList.add(
-    "learning"
-  );
+$("#closeMidi").addEventListener(
+  "click",
+  () => {
 
-
-  $("#midiMessage")
-    .textContent =
-    `🎯 Apprentissage :
-    utilise maintenant la commande
-    "${midiActions[action].name}"
-    sur ta planche DJ...`;
-
-}
-
-
-// ======================================================
-// FIN MIDI LEARN
-// ======================================================
-
-function finishMidiLearn(
-  type,
-  channel,
-  control
-) {
-
-  if (
-    !midiLearningAction
-  ) {
-
-    return false;
+    $("#midiPanel")
+      .classList
+      .add("hidden");
 
   }
+);
 
 
-  midiMapping[
-    midiLearningAction
-  ] = {
 
-    type,
-    channel,
-    control
+/* ================================================= */
+/* CONNECTER MIDI */
+/* ================================================= */
 
-  };
+async function connectMIDI(){
 
-
-  localStorage.setItem(
-    "BlueMixDJ_MIDI",
-    JSON.stringify(
-      midiMapping
-    )
-  );
+  const status =
+    $("#midiStatus");
 
 
-  $("#midiMessage")
-    .textContent =
-    `✅ Commande enregistrée :
-    ${midiActions[midiLearningAction].name}`;
+  if(!navigator.requestMIDIAccess){
 
-
-  midiLearningAction =
-    null;
-
-
-  createMidiLearnButtons();
-
-
-  return true;
-
-}
-
-
-// ======================================================
-// OUVRIR MIDI
-// ======================================================
-
-async function initMIDI() {
-
-  createMidiPanel();
-
-
-  const panel =
-    $(".midiPanel");
-
-
-  panel.classList.add(
-    "visible"
-  );
-
-
-  if (
-    !navigator.requestMIDIAccess
-  ) {
-
-    $("#midiStatus")
-      .textContent =
+    status.textContent =
       "❌ Web MIDI n'est pas disponible dans ce navigateur.";
 
+    status.className =
+      "midiStatus error";
+
     return;
 
   }
 
 
-  try {
+  try{
+
+    status.textContent =
+      "⏳ Connexion MIDI...";
+
+
+    status.className =
+      "midiStatus";
+
 
     midiAccess =
-      await navigator.requestMIDIAccess({
-        sysex: false
-      });
+      await navigator.requestMIDIAccess();
 
 
-    $("#midiStatus")
-      .textContent =
-      "🟢 MIDI activé. Recherche des contrôleurs...";
+    midiAccess.onstatechange =
+      handleMidiStateChange;
 
-
-    connectMidiInputs();
 
     updateMidiDevices();
 
 
-    midiAccess.onstatechange =
-      () => {
-
-        connectMidiInputs();
-
-        updateMidiDevices();
-
-      };
+    status.textContent =
+      "🟢 MIDI disponible";
 
 
-  } catch (error) {
+    status.className =
+      "midiStatus connected";
+
+
+  }catch(error){
 
     console.error(
-      "MIDI:",
+      "Erreur MIDI:",
       error
     );
 
 
-    $("#midiStatus")
-      .textContent =
-      "❌ Permission MIDI refusée.";
+    status.textContent =
+      "❌ Impossible d'accéder au MIDI : " +
+      error.message;
+
+
+    status.className =
+      "midiStatus error";
 
   }
 
 }
 
 
-// ======================================================
-// CONNECTER LES INPUTS
-// ======================================================
 
-function connectMidiInputs() {
+/* ================================================= */
+/* LISTE DES CONTROLEURS */
+/* ================================================= */
 
-  if (!midiAccess) return;
+function updateMidiDevices(){
+
+  const select =
+    $("#midiDevice");
 
 
-  midiInput = null;
+  select.innerHTML =
+    `<option value="">
+      Sélectionner un contrôleur
+    </option>`;
 
 
-  midiAccess.inputs.forEach(
+  if(!midiAccess)
+    return;
+
+
+  const inputs =
+    [...midiAccess.inputs.values()];
+
+
+  inputs.forEach(
     input => {
 
-      console.log(
-        "MIDI INPUT:",
-        input.name
-      );
-
-
-      if (!midiInput) {
-
-        midiInput =
-          input;
-
-      }
-
-
-      input.onmidimessage =
-        receiveMidi;
-
-    }
-  );
-
-
-  midiAccess.outputs.forEach(
-    output => {
-
-      midiOutput =
-        output;
-
-    }
-  );
-
-
-  const connected =
-    !!midiInput;
-
-
-  $("#midiBtn")
-    .classList
-    .toggle(
-      "connected",
-      connected
-    );
-
-
-  if (connected) {
-
-    $("#midiStatus")
-      .textContent =
-      `🟢 Connecté :
-      ${midiInput.name}`;
-
-  }
-
-}
-
-
-// ======================================================
-// AFFICHER LES PÉRIPHÉRIQUES
-// ======================================================
-
-function updateMidiDevices() {
-
-  const container =
-    $("#midiDevices");
-
-
-  if (!container) return;
-
-
-  container.innerHTML = "";
-
-
-  if (!midiAccess) return;
-
-
-  midiAccess.inputs.forEach(
-    input => {
-
-      const div =
+      const option =
         document.createElement(
-          "div"
+          "option"
         );
 
 
-      div.className =
-        "midiDevice connected";
+      option.value =
+        input.id;
 
 
-      div.innerHTML =
-        `🎛️ <strong>${input.name}</strong>
-        <br>
-        <small>
-        ${input.manufacturer || ""}
-        </small>`;
+      option.textContent =
+        input.name ||
+        "Contrôleur MIDI";
 
 
-      container.appendChild(
-        div
+      select.appendChild(
+        option
       );
 
     }
   );
 
 
-  if (
-    midiAccess.inputs.size === 0
-  ) {
+  /*
+     Si une DJ2GO2 est trouvée,
+     on la sélectionne automatiquement.
+  */
 
-    container.innerHTML =
-      `<div class="midiDevice">
-      Aucun contrôleur MIDI trouvé.
-      </div>`;
+  const dj2go =
+    inputs.find(
+      input =>
+        (
+          input.name ||
+          ""
+        )
+        .toLowerCase()
+        .includes("dj2go")
+    );
+
+
+  if(dj2go){
+
+    select.value =
+      dj2go.id;
+
+    selectMidiInput(
+      dj2go
+    );
+
+  }else if(inputs.length === 1){
+
+    select.value =
+      inputs[0].id;
+
+    selectMidiInput(
+      inputs[0]
+    );
 
   }
+
+
+  renderMidiMappings();
 
 }
 
 
-// ======================================================
-// RECEVOIR MIDI
-// ======================================================
 
-function receiveMidi(
+/* ================================================= */
+/* SELECTION MIDI */
+/* ================================================= */
+
+$("#midiDevice").addEventListener(
+  "change",
+  event => {
+
+    const id =
+      event.target.value;
+
+
+    if(!id){
+
+      selectedMidiInput =
+        null;
+
+      return;
+
+    }
+
+
+    const input =
+      midiAccess.inputs.get(id);
+
+
+    if(input){
+
+      selectMidiInput(
+        input
+      );
+
+    }
+
+  }
+);
+
+
+
+/* ================================================= */
+/* BRANCHER UNE ENTREE MIDI */
+/* ================================================= */
+
+function selectMidiInput(
+  input
+){
+
+  if(selectedMidiInput){
+
+    selectedMidiInput.onmidimessage =
+      null;
+
+  }
+
+
+  selectedMidiInput =
+    input;
+
+
+  selectedMidiInput.onmidimessage =
+    handleMidiMessage;
+
+
+  selectedMidiInput.open()
+    .catch(
+      error =>
+        console.warn(
+          "Ouverture MIDI:",
+          error
+        )
+    );
+
+
+  $("#midiStatus").textContent =
+    "🟢 Connecté : " +
+    (
+      input.name ||
+      "Contrôleur MIDI"
+    );
+
+
+  $("#midiStatus").className =
+    "midiStatus connected";
+
+}
+
+
+
+/* ================================================= */
+/* MESSAGE MIDI */
+/* ================================================= */
+
+function handleMidiMessage(
   event
-) {
+){
 
   const data =
-    event.data;
+    Array.from(
+      event.data
+    );
 
 
-  if (!data || data.length < 2) {
+  if(data.length < 2)
     return;
-  }
 
 
   const status =
@@ -1735,7 +900,7 @@ function receiveMidi(
     data[2] || 0;
 
 
-  const type =
+  const command =
     status & 0xF0;
 
 
@@ -1743,50 +908,78 @@ function receiveMidi(
     (status & 0x0F) + 1;
 
 
-  midiLastMessage = {
+  let type =
+    "UNKNOWN";
 
-    type,
 
-    channel,
+  if(command === 0x80)
+    type = "NOTE OFF";
 
-    control: data1,
 
-    value: data2
+  if(command === 0x90)
+    type =
+      data2 > 0
+        ? "NOTE ON"
+        : "NOTE OFF";
 
-  };
+
+  if(command === 0xB0)
+    type = "CC";
+
+
+  if(command === 0xE0)
+    type = "PITCH";
+
+
+  /*
+     Affichage du message.
+  */
+
+  const messageText =
+`Type: ${type}
+Canal: ${channel}
+Data 1: ${data1}
+Data 2: ${data2}
+HEX: ${data.map(
+  x =>
+    x.toString(16)
+      .padStart(2,"0")
+).join(" ")}`;
+
+
+  $("#midiLog")
+    .textContent =
+      messageText;
 
 
   console.log(
-    "🎹 MIDI",
-    midiLastMessage
+    "MIDI:",
+    {
+      type,
+      channel,
+      data1,
+      data2,
+      raw:data
+    }
   );
 
 
-  if ($("#midiMessage")) {
+  /*
+     MIDI LEARN
+  */
 
-    $("#midiMessage")
-      .textContent =
-      `MIDI reçu →
-      Type: 0x${type
-        .toString(16)
-        .toUpperCase()}
-      | Canal: ${channel}
-      | Contrôle: ${data1}
-      | Valeur: ${data2}`;
+  if(
+    midiLearnMode &&
+    midiLearningElement
+  ){
 
-  }
-
-
-  // MIDI LEARN
-
-  if (
-    midiLearningAction
-  ) {
-
-    finishMidiLearn(
-      type,
-      channel,
-      data1
+    learnMidi(
+      midiLearningElement,
+      {
+        type,
+        channel,
+        data1
+      }
     );
 
     return;
@@ -1794,451 +987,821 @@ function receiveMidi(
   }
 
 
-  // EXÉCUTION
+  /*
+     Utiliser le mapping existant.
+  */
 
-  executeMidiCommand(
-    type,
-    channel,
-    data1,
-    data2
-  );
-
-}
-
-
-// ======================================================
-// EXÉCUTER UNE COMMANDE MIDI
-// ======================================================
-
-function executeMidiCommand(
-  type,
-  channel,
-  control,
-  value
-) {
-
-  Object.entries(
-    midiMapping
-  ).forEach(
-    ([action, mapping]) => {
-
-      if (
-        mapping.type !== type ||
-        mapping.channel !== channel ||
-        mapping.control !== control
-      ) {
-
-        return;
-
-      }
-
-
-      const actionInfo =
-        midiActions[action];
-
-
-      if (!actionInfo) return;
-
-
-      if (
-        actionInfo.type === "button"
-      ) {
-
-        if (
-          type === 0x90 &&
-          value === 0
-        ) {
-
-          return;
-
-        }
-
-
-        if (
-          type === 0x80
-        ) {
-
-          return;
-
-        }
-
-
-        executeMidiButton(
-          action
-        );
-
-      }
-
-
-      if (
-        actionInfo.type === "slider"
-      ) {
-
-        const normalized =
-          value / 127;
-
-
-        executeMidiSlider(
-          action,
-          normalized
-        );
-
-      }
-
+  executeMidiMapping(
+    {
+      type,
+      channel,
+      data1,
+      data2
     }
   );
 
 }
 
 
-// ======================================================
-// BOUTONS MIDI
-// ======================================================
 
-function executeMidiButton(
-  action
-) {
+/* ================================================= */
+/* MIDI LEARN */
+/* ================================================= */
 
-  switch (action) {
+$("#midiLearn").addEventListener(
+  "click",
+  () => {
 
-    case "playA":
-
-      togglePlay("A");
-
-      break;
+    midiLearnMode =
+      !midiLearnMode;
 
 
-    case "cueA":
-
-      cueDeck("A");
-
-      break;
-
-
-    case "playB":
-
-      togglePlay("B");
-
-      break;
-
-
-    case "cueB":
-
-      cueDeck("B");
-
-      break;
-
-
-    case "cueA1":
-
-      triggerHotCue(
-        "A",
-        "1"
+    $("#midiLearn")
+      .classList
+      .toggle(
+        "active",
+        midiLearnMode
       );
 
-      break;
 
+    if(!midiLearnMode){
 
-    case "cueA2":
-
-      triggerHotCue(
-        "A",
-        "2"
-      );
-
-      break;
-
-
-    case "cueA3":
-
-      triggerHotCue(
-        "A",
-        "3"
-      );
-
-      break;
-
-
-    case "cueA4":
-
-      triggerHotCue(
-        "A",
-        "4"
-      );
-
-      break;
-
-
-    case "cueB1":
-
-      triggerHotCue(
-        "B",
-        "1"
-      );
-
-      break;
-
-
-    case "cueB2":
-
-      triggerHotCue(
-        "B",
-        "2"
-      );
-
-      break;
-
-
-    case "cueB3":
-
-      triggerHotCue(
-        "B",
-        "3"
-      );
-
-      break;
-
-
-    case "cueB4":
-
-      triggerHotCue(
-        "B",
-        "4"
-      );
-
-      break;
-
-  }
-
-}
-
-
-// ======================================================
-// HOT CUE MIDI
-// ======================================================
-
-function triggerHotCue(
-  deckId,
-  cueNumber
-) {
-
-  const deck =
-    state[deckId];
-
-
-  if (!deck.audio.src) {
-    return;
-  }
-
-
-  if (
-    deck.hotCues[cueNumber] === undefined
-  ) {
-
-    deck.hotCues[cueNumber] =
-      deck.audio.currentTime;
-
-  }
-
-
-  deck.audio.currentTime =
-    deck.hotCues[cueNumber];
-
-}
-
-
-// ======================================================
-// SLIDERS MIDI
-// ======================================================
-
-function executeMidiSlider(
-  action,
-  value
-) {
-
-  switch (action) {
-
-    case "volA":
-
-      $("#volA").value =
-        value;
-
-      updateMix();
-
-      break;
-
-
-    case "volB":
-
-      $("#volB").value =
-        value;
-
-      updateMix();
-
-      break;
-
-
-    case "crossfader":
-
-      $("#crossfader").value =
-        value * 2 - 1;
-
-      updateMix();
-
-      break;
-
-
-    case "pitchA": {
-
-      const pitch =
-        value * 20 - 10;
-
-
-      $("#pitchA").value =
-        pitch;
-
-
-      updatePitch(
-        "A",
-        pitch
-      );
-
-      break;
-
-    }
-
-
-    case "pitchB": {
-
-      const pitch =
-        value * 20 - 10;
-
-
-      $("#pitchB").value =
-        pitch;
-
-
-      updatePitch(
-        "B",
-        pitch
-      );
-
-      break;
-
-    }
-
-  }
-
-}
-
-
-// ======================================================
-// BOUTON MIDI
-// ======================================================
-
-$("#midiBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      initMIDI();
-
-    }
-  );
-
-
-// ======================================================
-// CLAVIER - RACCOURCIS
-// ======================================================
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.target.tagName ===
-      "INPUT"
-    ) {
+      stopMidiLearning();
 
       return;
 
     }
 
 
-    switch (
-      event.key.toLowerCase()
-    ) {
-
-      case "q":
-
-        togglePlay("A");
-
-        break;
-
-
-      case "a":
-
-        cueDeck("A");
-
-        break;
-
-
-      case "p":
-
-        togglePlay("B");
-
-        break;
-
-
-      case "l":
-
-        cueDeck("B");
-
-        break;
-
-    }
+    alert(
+      "MODE MIDI LEARN activé.\n\n" +
+      "Clique maintenant sur PLAY, CUE, " +
+      "le crossfader ou un autre contrôle."
+    );
 
   }
 );
 
 
-// ======================================================
-// NETTOYAGE DES OBJECT URL
-// ======================================================
 
-window.addEventListener(
-  "beforeunload",
+/* ================================================= */
+/* PREPARER UN ELEMENT AU MIDI LEARN */
+/* ================================================= */
+
+function startMidiLearning(
+  element
+){
+
+  if(!midiLearnMode){
+
+    alert(
+      "Active d'abord MIDI LEARN."
+    );
+
+    return;
+
+  }
+
+
+  if(midiLearningElement){
+
+    midiLearningElement
+      .classList
+      .remove(
+        "midiLearningTarget"
+      );
+
+  }
+
+
+  midiLearningElement =
+    element;
+
+
+  midiLearningElement
+    .classList
+    .add(
+      "midiLearningTarget"
+    );
+
+
+  $("#midiStatus").textContent =
+    "🟡 En attente d'un bouton MIDI...";
+
+}
+
+
+
+/* ================================================= */
+/* FIN MIDI LEARN */
+/* ================================================= */
+
+function stopMidiLearning(){
+
+  if(midiLearningElement){
+
+    midiLearningElement
+      .classList
+      .remove(
+        "midiLearningTarget"
+      );
+
+  }
+
+
+  midiLearningElement =
+    null;
+
+}
+
+
+
+/* ================================================= */
+/* APPRENDRE UN MESSAGE */
+/* ================================================= */
+
+function learnMidi(
+  element,
+  midi
+){
+
+  const action =
+    element.dataset.midiAction;
+
+
+  if(!action){
+
+    /*
+       On donne automatiquement
+       un identifiant à l'élément.
+    */
+
+    if(!element.id){
+
+      element.id =
+        "midi_" +
+        Math.random()
+          .toString(36)
+          .substring(2,8);
+
+    }
+
+  }
+
+
+  const key =
+    action ||
+    element.id;
+
+
+  midiMappings[key] = {
+
+    type:midi.type,
+
+    channel:midi.channel,
+
+    data1:midi.data1
+
+  };
+
+
+  localStorage.setItem(
+    "bluemixMidiMappings",
+    JSON.stringify(
+      midiMappings
+    )
+  );
+
+
+  element
+    .classList
+    .remove(
+      "midiLearningTarget"
+    );
+
+
+  $("#midiLog").textContent +=
+    "\n\n✅ MAPPING ENREGISTRÉ";
+
+
+  midiLearningElement =
+    null;
+
+
+  renderMidiMappings();
+
+
+  /*
+     On garde MIDI Learn actif
+     pour pouvoir apprendre plusieurs boutons.
+  */
+
+}
+
+
+
+/* ================================================= */
+/* EXECUTER UN MAPPING */
+/* ================================================= */
+
+function executeMidiMapping(
+  midi
+){
+
+  for(
+    const key in midiMappings
+  ){
+
+    const mapping =
+      midiMappings[key];
+
+
+    if(
+      mapping.type !== midi.type
+    )
+      continue;
+
+
+    if(
+      mapping.channel !== midi.channel
+    )
+      continue;
+
+
+    if(
+      mapping.data1 !== midi.data1
+    )
+      continue;
+
+
+    executeAction(
+      key,
+      midi.data2
+    );
+
+  }
+
+}
+
+
+
+/* ================================================= */
+/* ACTIONS MIDI */
+/* ================================================= */
+
+function executeAction(
+  action,
+  value
+){
+
+  /*
+     PLAY A
+  */
+
+  if(action === "playA"){
+
+    if(value > 0){
+
+      togglePlay("A");
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+     PLAY B
+  */
+
+  if(action === "playB"){
+
+    if(value > 0){
+
+      togglePlay("B");
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+     CUE A
+  */
+
+  if(action === "cueA"){
+
+    if(value > 0){
+
+      cueDeck("A");
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+     CUE B
+  */
+
+  if(action === "cueB"){
+
+    if(value > 0){
+
+      cueDeck("B");
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+     CROSSFADEUR
+  */
+
+  if(action === "crossfader"){
+
+    const cross =
+      (
+        value / 127
+      ) * 2 - 1;
+
+
+    $("#crossfader")
+      .value =
+        cross;
+
+
+    updateMix();
+
+
+    return;
+
+  }
+
+
+  /*
+     VOLUME A
+  */
+
+  if(action === "volA"){
+
+    $("#volA").value =
+      value / 127;
+
+
+    updateMix();
+
+
+    return;
+
+  }
+
+
+  /*
+     VOLUME B
+  */
+
+  if(action === "volB"){
+
+    $("#volB").value =
+      value / 127;
+
+
+    updateMix();
+
+
+    return;
+
+  }
+
+
+  /*
+     PITCH A
+  */
+
+  if(action === "pitchA"){
+
+    const pitch =
+      (
+        value / 127
+      ) * 20 - 10;
+
+
+    $("#pitchA").value =
+      pitch;
+
+
+    audioA.playbackRate =
+      1 +
+      pitch / 100;
+
+
+    return;
+
+  }
+
+
+  /*
+     PITCH B
+  */
+
+  if(action === "pitchB"){
+
+    const pitch =
+      (
+        value / 127
+      ) * 20 - 10;
+
+
+    $("#pitchB").value =
+      pitch;
+
+
+    audioB.playbackRate =
+      1 +
+      pitch / 100;
+
+
+    return;
+
+  }
+
+
+  /*
+     HOT CUES
+  */
+
+  if(
+    action.startsWith("cueA")
+  ){
+
+    if(value > 0){
+
+      flashCue(
+        action
+      );
+
+    }
+
+    return;
+
+  }
+
+
+  if(
+    action.startsWith("cueB")
+  ){
+
+    if(value > 0){
+
+      flashCue(
+        action
+      );
+
+    }
+
+    return;
+
+  }
+
+}
+
+
+
+/* ================================================= */
+/* FLASH CUE */
+/* ================================================= */
+
+function flashCue(
+  action
+){
+
+  const button =
+    document.querySelector(
+      `[data-midi-action="${action}"]`
+    );
+
+
+  if(!button)
+    return;
+
+
+  button.animate(
+    [
+      {
+        transform:"scale(1)"
+      },
+
+      {
+        transform:"scale(.85)"
+      },
+
+      {
+        transform:"scale(1)"
+      }
+
+    ],
+    {
+      duration:150
+    }
+  );
+
+}
+
+
+
+/* ================================================= */
+/* CLICK → MIDI LEARN */
+/* ================================================= */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if(!midiLearnMode)
+      return;
+
+
+    const target =
+      event.target.closest(
+        "button, input"
+      );
+
+
+    if(!target)
+      return;
+
+
+    /*
+       Ne pas apprendre les boutons
+       du panneau MIDI lui-même.
+    */
+
+    if(
+      target.closest(
+        "#midiPanel"
+      )
+    ){
+
+      return;
+
+    }
+
+
+    /*
+       Contrôles intéressants.
+    */
+
+    const allowed =
+      target.matches(
+        "#playA, #playB, #cueA, #cueB, " +
+        "#crossfader, #volA, #volB, " +
+        "#pitchA, #pitchB, .cuePad"
+      );
+
+
+    if(!allowed)
+      return;
+
+
+    event.preventDefault();
+
+
+    startMidiLearning(
+      target
+    );
+
+  },
+  true
+);
+
+
+
+/* ================================================= */
+/* EFFACER MAPPING */
+/* ================================================= */
+
+$("#midiClear").addEventListener(
+  "click",
   () => {
 
-    if (audioA.src) {
+    if(
+      !confirm(
+        "Effacer tous les mappings MIDI ?"
+      )
+    ){
 
-      URL.revokeObjectURL(
-        audioA.src
-      );
-
-    }
-
-
-    if (audioB.src) {
-
-      URL.revokeObjectURL(
-        audioB.src
-      );
+      return;
 
     }
+
+
+    midiMappings = {};
+
+
+    localStorage.removeItem(
+      "bluemixMidiMappings"
+    );
+
+
+    renderMidiMappings();
+
+
+    $("#midiStatus").textContent =
+      "🟢 Mapping MIDI effacé.";
 
   }
 );
 
 
-// ======================================================
-// BLUE MIX DJ PRÊT
-// ======================================================
 
-console.log(
-  "🎧 BlueMix DJ prêt."
+/* ================================================= */
+/* AFFICHER LES MAPPINGS */
+/* ================================================= */
+
+function renderMidiMappings(){
+
+  const container =
+    $("#mappingList");
+
+
+  container.innerHTML = "";
+
+
+  const keys =
+    Object.keys(
+      midiMappings
+    );
+
+
+  if(!keys.length){
+
+    container.innerHTML =
+      `<div class="mappingItem">
+        Aucun mapping
+      </div>`;
+
+    return;
+
+  }
+
+
+  keys.forEach(
+    key => {
+
+      const map =
+        midiMappings[key];
+
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "mappingItem";
+
+
+      item.innerHTML =
+        `<span>${key}</span>
+         <span>
+           ${map.type}
+           CH ${map.channel}
+           #${map.data1}
+         </span>`;
+
+
+      container.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+
+
+renderMidiMappings();
+
+
+
+/* ================================================= */
+/* ETAT MIDI */
+/* ================================================= */
+
+function handleMidiStateChange(
+  event
+){
+
+  console.log(
+    "MIDI state:",
+    event.port.name,
+    event.port.state
+  );
+
+
+  updateMidiDevices();
+
+}
+
+
+
+$("#midiConnect").addEventListener(
+  "click",
+  async () => {
+
+    await connectMIDI();
+
+  }
 );
 
+
+
+/* ================================================= */
+/* HOT CUES CLIQUE */
+/* ================================================= */
+
+document
+  .querySelectorAll(".cuePad")
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          button.animate(
+            [
+              {
+                transform:"scale(1)"
+              },
+
+              {
+                transform:"scale(.9)"
+              },
+
+              {
+                transform:"scale(1)"
+              }
+
+            ],
+            {
+              duration:150
+            }
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+
+/* ================================================= */
+/* HORLOGE */
+/* ================================================= */
+
+function updateClock(){
+
+  $("#clock")
+    .textContent =
+      new Date()
+        .toLocaleTimeString(
+          "fr-CA",
+          {
+            hour:"2-digit",
+            minute:"2-digit"
+          }
+        );
+
+}
+
+
+setInterval(
+  updateClock,
+  1000
+);
+
+
+updateClock();
+
+
+
+/* ================================================= */
+/* FIN */
+/* ================================================= */
+
 console.log(
-  "🎹 Clique sur MIDI pour connecter ta planche."
+  "🎧 BlueMix DJ chargé."
 );
