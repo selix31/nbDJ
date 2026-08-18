@@ -2,22 +2,20 @@
 <html lang="fr">
 
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>BlueMix DJ</title>
+<title>BlueMix DJ</title>
 
-  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
 </head>
+
 
 <body>
 
 <header>
 
-  <button class="icon" id="menuBtn">☰</button>
+  <button class="icon">☰</button>
 
   <div class="clock" id="clock">
     00:00
@@ -33,25 +31,26 @@
     MIDI
   </button>
 
-  <button class="icon" id="settingsBtn">
-    ⚙
-  </button>
+  <button class="icon">⚙</button>
 
-  <button class="icon" id="moreBtn">
-    ⋮
-  </button>
+  <button class="icon">⋮</button>
 
 </header>
 
 
 <main>
 
+
+<!-- ================================================= -->
+<!-- DECKS -->
+<!-- ================================================= -->
+
 <section class="decks">
 
 
-<!-- =====================================================
-     DECK A
-===================================================== -->
+<!-- ================================================= -->
+<!-- DECK A -->
+<!-- ================================================= -->
 
 <div class="deck deckA">
 
@@ -75,7 +74,7 @@
 
     <div class="bpm">
 
-      <b id="bpmA">
+      <b>
         128.0
       </b>
 
@@ -94,8 +93,8 @@
 
   <canvas
     id="waveA"
-    class="wave"
-  ></canvas>
+    class="wave">
+  </canvas>
 
 
   <div class="deckControls">
@@ -107,23 +106,18 @@
         LOOP
       </label>
 
+
       <div class="row">
 
-        <button
-          class="loopMinus"
-          data-deck="A"
-        >
+        <button>
           −
         </button>
 
-        <b id="loopA">
+        <b>
           4
         </b>
 
-        <button
-          class="loopPlus"
-          data-deck="A"
-        >
+        <button>
           +
         </button>
 
@@ -132,17 +126,11 @@
 
       <div class="row">
 
-        <button
-          class="loopIn"
-          data-deck="A"
-        >
+        <button>
           IN
         </button>
 
-        <button
-          class="loopOut"
-          data-deck="A"
-        >
+        <button>
           OUT
         </button>
 
@@ -156,33 +144,25 @@
 
       <button
         class="cuePad"
-        data-deck="A"
-        data-cue="1"
-      >
+        data-midi-action="cueA1">
         1
       </button>
 
       <button
         class="cuePad"
-        data-deck="A"
-        data-cue="2"
-      >
+        data-midi-action="cueA2">
         2
       </button>
 
       <button
         class="cuePad"
-        data-deck="A"
-        data-cue="3"
-      >
+        data-midi-action="cueA3">
         3
       </button>
 
       <button
         class="cuePad"
-        data-deck="A"
-        data-cue="4"
-      >
+        data-midi-action="cueA4">
         4
       </button>
 
@@ -193,16 +173,11 @@
 
       <div
         class="jog"
-        id="jogA"
-      >
+        id="jogA">
 
         <div class="label">
 
-          <span id="jogBpmA">
-            128.0
-          </span>
-
-          <br>
+          128.0<br>
 
           <small>
             BPM
@@ -219,9 +194,7 @@
         type="range"
         min="-10"
         max="10"
-        step="0.01"
-        value="0"
-      >
+        value="0">
 
     </div>
 
@@ -232,26 +205,21 @@
 
     <button
       class="bigBtn"
-      id="cueA"
-    >
+      id="cueA">
       CUE
     </button>
 
 
     <button
       class="play"
-      id="playA"
-    >
+      id="playA">
       ▶
     </button>
 
 
     <button
-      class="sync"
-      id="syncA"
-    >
-      SYNC
-      <br>
+      class="sync">
+      SYNC<br>
       <small>
         128.0
       </small>
@@ -265,8 +233,7 @@
       <input
         id="fileA"
         type="file"
-        accept="audio/*"
-      >
+        accept="audio/*">
 
     </label>
 
@@ -276,11 +243,12 @@
 
 
 
-<!-- =====================================================
-     MIXER
-===================================================== -->
+<!-- ================================================= -->
+<!-- MIXER -->
+<!-- ================================================= -->
 
 <div class="mixer">
+
 
   <div class="tabs">
 
@@ -311,12 +279,11 @@
       </label>
 
       <input
-        class="knob eqAHigh"
+        class="knob"
         type="range"
         min="-6"
         max="6"
-        value="0"
-      >
+        value="0">
 
 
       <label>
@@ -324,12 +291,11 @@
       </label>
 
       <input
-        class="knob eqAMid"
+        class="knob"
         type="range"
         min="-6"
         max="6"
-        value="0"
-      >
+        value="0">
 
 
       <label>
@@ -337,12 +303,11 @@
       </label>
 
       <input
-        class="knob eqALow"
+        class="knob"
         type="range"
         min="-6"
         max="6"
-        value="0"
-      >
+        value="0">
 
 
       <input
@@ -352,8 +317,7 @@
         min="0"
         max="1"
         step="0.01"
-        value="0.8"
-      >
+        value="0.8">
 
     </div>
 
@@ -368,14 +332,13 @@
       </label>
 
       <input
-        id="masterVolume"
         class="knob"
+        id="masterVolume"
         type="range"
         min="0"
         max="1"
         step="0.01"
-        value="0.8"
-      >
+        value="0.8">
 
 
       <div class="meters">
@@ -391,17 +354,16 @@
       </label>
 
       <input
-        id="headphoneVolume"
         class="knob"
+        id="headphoneVolume"
         type="range"
         min="0"
         max="1"
         step="0.01"
-        value="0.5"
-      >
+        value="0.5">
 
 
-      <button id="headphoneCue">
+      <button>
         CUE
       </button>
 
@@ -418,12 +380,11 @@
       </label>
 
       <input
-        class="knob eqBHigh"
+        class="knob"
         type="range"
         min="-6"
         max="6"
-        value="0"
-      >
+        value="0">
 
 
       <label>
@@ -431,12 +392,11 @@
       </label>
 
       <input
-        class="knob eqBMid"
+        class="knob"
         type="range"
         min="-6"
         max="6"
-        value="0"
-      >
+        value="0">
 
 
       <label>
@@ -444,12 +404,11 @@
       </label>
 
       <input
-        class="knob eqBLow"
+        class="knob"
         type="range"
         min="-6"
         max="6"
-        value="0"
-      >
+        value="0">
 
 
       <input
@@ -459,8 +418,7 @@
         min="0"
         max="1"
         step="0.01"
-        value="0.8"
-      >
+        value="0.8">
 
     </div>
 
@@ -479,16 +437,15 @@
     min="-1"
     max="1"
     step="0.01"
-    value="0"
-  >
+    value="0">
 
 </div>
 
 
 
-<!-- =====================================================
-     DECK B
-===================================================== -->
+<!-- ================================================= -->
+<!-- DECK B -->
+<!-- ================================================= -->
 
 <div class="deck deckB">
 
@@ -510,9 +467,10 @@
 
     </div>
 
+
     <div class="bpm">
 
-      <b id="bpmB">
+      <b>
         126.0
       </b>
 
@@ -531,8 +489,8 @@
 
   <canvas
     id="waveB"
-    class="wave"
-  ></canvas>
+    class="wave">
+  </canvas>
 
 
   <div class="deckControls">
@@ -542,16 +500,11 @@
 
       <div
         class="jog redJog"
-        id="jogB"
-      >
+        id="jogB">
 
         <div class="label">
 
-          <span id="jogBpmB">
-            126.0
-          </span>
-
-          <br>
+          126.0<br>
 
           <small>
             BPM
@@ -568,9 +521,7 @@
         type="range"
         min="-10"
         max="10"
-        step="0.01"
-        value="0"
-      >
+        value="0">
 
     </div>
 
@@ -584,21 +535,15 @@
 
       <div class="row">
 
-        <button
-          class="loopMinus"
-          data-deck="B"
-        >
+        <button>
           −
         </button>
 
-        <b id="loopB">
+        <b>
           4
         </b>
 
-        <button
-          class="loopPlus"
-          data-deck="B"
-        >
+        <button>
           +
         </button>
 
@@ -607,17 +552,11 @@
 
       <div class="row">
 
-        <button
-          class="loopIn"
-          data-deck="B"
-        >
+        <button>
           IN
         </button>
 
-        <button
-          class="loopOut"
-          data-deck="B"
-        >
+        <button>
           OUT
         </button>
 
@@ -631,33 +570,25 @@
 
       <button
         class="cuePad redPad"
-        data-deck="B"
-        data-cue="1"
-      >
+        data-midi-action="cueB1">
         1
       </button>
 
       <button
         class="cuePad redPad"
-        data-deck="B"
-        data-cue="2"
-      >
+        data-midi-action="cueB2">
         2
       </button>
 
       <button
         class="cuePad redPad"
-        data-deck="B"
-        data-cue="3"
-      >
+        data-midi-action="cueB3">
         3
       </button>
 
       <button
         class="cuePad redPad"
-        data-deck="B"
-        data-cue="4"
-      >
+        data-midi-action="cueB4">
         4
       </button>
 
@@ -668,6 +599,7 @@
 
   <div class="transport">
 
+
     <label class="load">
 
       📁 Charger
@@ -675,37 +607,37 @@
       <input
         id="fileB"
         type="file"
-        accept="audio/*"
-      >
+        accept="audio/*">
 
     </label>
 
 
-    <button
-      class="sync"
-      id="syncB"
-    >
-      SYNC
-      <br>
+    <button class="sync">
+
+      SYNC<br>
+
       <small>
         126.0
       </small>
+
     </button>
 
 
     <button
       class="play redPlay"
-      id="playB"
-    >
+      id="playB">
+
       ▶
+
     </button>
 
 
     <button
       class="bigBtn redText"
-      id="cueB"
-    >
+      id="cueB">
+
       CUE
+
     </button>
 
   </div>
@@ -716,9 +648,9 @@
 
 
 
-<!-- =====================================================
-     FX + SAMPLER
-===================================================== -->
+<!-- ================================================= -->
+<!-- FX / SAMPLER -->
+<!-- ================================================= -->
 
 <section class="bottom">
 
@@ -735,16 +667,14 @@
 
 
     <input
-      id="filterAmount"
       class="bigKnob"
       type="range"
       min="0"
       max="100"
-      value="50"
-    >
+      value="50">
 
 
-    <button id="filterOn">
+    <button>
       ON
     </button>
 
@@ -761,53 +691,15 @@
 
     <div class="pads">
 
-      <button data-sampler="1">
-        1
-        <br>
-        <small>Air Horn</small>
-      </button>
+      <button>1<br><small>Air Horn</small></button>
+      <button>2<br><small>Siren</small></button>
+      <button>3<br><small>Explosion</small></button>
+      <button>4<br><small>Clap</small></button>
 
-      <button data-sampler="2">
-        2
-        <br>
-        <small>Siren</small>
-      </button>
-
-      <button data-sampler="3">
-        3
-        <br>
-        <small>Explosion</small>
-      </button>
-
-      <button data-sampler="4">
-        4
-        <br>
-        <small>Clap</small>
-      </button>
-
-      <button data-sampler="5">
-        5
-        <br>
-        <small>Kick</small>
-      </button>
-
-      <button data-sampler="6">
-        6
-        <br>
-        <small>Snare</small>
-      </button>
-
-      <button data-sampler="7">
-        7
-        <br>
-        <small>HiHat</small>
-      </button>
-
-      <button data-sampler="8">
-        8
-        <br>
-        <small>Vocal</small>
-      </button>
+      <button>5<br><small>Kick</small></button>
+      <button>6<br><small>Snare</small></button>
+      <button>7<br><small>HiHat</small></button>
+      <button>8<br><small>Vocal</small></button>
 
     </div>
 
@@ -827,16 +719,14 @@
 
 
     <input
-      id="echoAmount"
       class="bigKnob"
       type="range"
       min="0"
       max="100"
-      value="30"
-    >
+      value="30">
 
 
-    <button id="echoOn">
+    <button>
       ON
     </button>
 
@@ -848,75 +738,172 @@
 
 
 
-<!-- =====================================================
-     NAVIGATION
-===================================================== -->
+<!-- ================================================= -->
+<!-- NAVIGATION -->
+<!-- ================================================= -->
 
 <nav>
 
   <button class="active">
-
     🎵
-
     <span>
       BIBLIOTHÈQUE
     </span>
-
   </button>
 
-
   <button>
-
     ☷
-
     <span>
       PLAYLISTS
     </span>
-
   </button>
 
-
   <button>
-
     ▢
-
     <span>
       EXPLORER
     </span>
-
   </button>
 
-
   <button>
-
     ◉
-
     <span>
       ENREGISTREMENTS
     </span>
-
   </button>
 
-
   <button>
-
     ⚙
-
     <span>
       RÉGLAGES
     </span>
-
   </button>
 
 </nav>
 
 
 
+<!-- ================================================= -->
+<!-- MIDI PANEL -->
+<!-- ================================================= -->
+
+<div
+  id="midiPanel"
+  class="midiPanel hidden">
+
+
+  <div class="midiHeader">
+
+    <strong>
+      🎛️ MIDI
+    </strong>
+
+    <button id="closeMidi">
+      ✕
+    </button>
+
+  </div>
+
+
+  <div
+    id="midiStatus"
+    class="midiStatus">
+    MIDI non connecté
+  </div>
+
+
+  <select id="midiDevice">
+
+    <option value="">
+      Sélectionner un contrôleur
+    </option>
+
+  </select>
+
+
+  <button
+    id="midiConnect"
+    class="midiConnect">
+    🔌 CONNECTER MIDI
+  </button>
+
+
+  <button
+    id="midiLearn"
+    class="midiLearn">
+    🎓 MODE MIDI LEARN
+  </button>
+
+
+  <button
+    id="midiClear"
+    class="midiClear">
+    🗑️ EFFACER LE MAPPING
+  </button>
+
+
+  <div class="midiHelp">
+
+    <b>
+      MIDI Learn
+    </b>
+
+    <p>
+      1. Active MIDI Learn
+    </p>
+
+    <p>
+      2. Clique sur PLAY, CUE ou un autre contrôle
+    </p>
+
+    <p>
+      3. Appuie sur le bouton correspondant de la DJ2GO2
+    </p>
+
+  </div>
+
+
+  <div class="midiLast">
+
+    <b>
+      Dernier message MIDI
+    </b>
+
+    <pre id="midiLog">
+Aucun message
+    </pre>
+
+  </div>
+
+
+  <div>
+
+    <b>
+      Mapping actuel
+    </b>
+
+    <div
+      id="mappingList"
+      class="mappingList">
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- AUDIO -->
+<!-- ================================================= -->
+
 <audio id="audioA"></audio>
+
 <audio id="audioB"></audio>
 
 
 <script src="app.js"></script>
 
 </body>
+
 </html>
