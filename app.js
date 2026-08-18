@@ -60,7 +60,12 @@ function setupDeck(id, fileInput) {
     deck.audio.addEventListener(
       "loadedmetadata",
       () => {
-        drawWave(deck.wave, id);
+
+        drawWave(
+          deck.wave,
+          id
+        );
+
       },
       { once: true }
     );
@@ -70,53 +75,72 @@ function setupDeck(id, fileInput) {
 
   // PLAY / PAUSE SOURIS
 
-  deck.play.addEventListener("click", async () => {
+  deck.play.addEventListener(
+    "click",
+    async () => {
 
-    if (deck.audio.paused) {
+      if (deck.audio.paused) {
 
-      try {
+        try {
 
-        await deck.audio.play();
+          await deck.audio.play();
 
-        deck.play.textContent = "❚❚";
+          deck.play.textContent =
+            "❚❚";
 
-      } catch (error) {
+        } catch (error) {
 
-        console.error(
-          "Erreur lecture :",
-          error
-        );
+          console.error(
+            "Erreur lecture:",
+            error
+          );
+
+        }
+
+      } else {
+
+        deck.audio.pause();
+
+        deck.play.textContent =
+          "▶";
 
       }
 
-    } else {
+    }
+  );
 
-      deck.audio.pause();
 
-      deck.play.textContent = "▶";
+  // FIN DE LA MUSIQUE
+
+  deck.audio.addEventListener(
+    "ended",
+    () => {
+
+      deck.play.textContent =
+        "▶";
+
+      drawWave(
+        deck.wave,
+        id
+      );
 
     }
-
-  });
-
-
-  // FIN DE MUSIQUE
-
-  deck.audio.addEventListener("ended", () => {
-
-    deck.play.textContent = "▶";
-
-    drawWave(deck.wave, id);
-
-  });
+  );
 
 }
 
 
-// Initialisation des decks
+// Initialisation
 
-setupDeck("A", "#fileA");
-setupDeck("B", "#fileB");
+setupDeck(
+  "A",
+  "#fileA"
+);
+
+setupDeck(
+  "B",
+  "#fileB"
+);
 
 
 // ============================================================
@@ -141,7 +165,8 @@ function drawWave(canvas, id) {
   const height =
     canvas.clientHeight;
 
-  if (!width || !height) return;
+  if (!width || !height)
+    return;
 
   const dpr =
     window.devicePixelRatio || 1;
@@ -169,8 +194,6 @@ function drawWave(canvas, id) {
   );
 
 
-  // Couleurs
-
   const color =
     id === "A"
       ? "#1598ff"
@@ -182,8 +205,6 @@ function drawWave(canvas, id) {
       : "#5c1820";
 
 
-  // Fond
-
   ctx.fillStyle =
     "#04182e";
 
@@ -194,8 +215,6 @@ function drawWave(canvas, id) {
     height
   );
 
-
-  // Position actuelle
 
   const duration =
     audio.duration || 0;
@@ -222,15 +241,17 @@ function drawWave(canvas, id) {
 
   }
 
+
   const positionX =
     progress * width;
 
 
-  // ==========================================================
-  // DESSIN DE LA WAVEFORM
-  // ==========================================================
+  // ----------------------------------------------------------
+  // WAVE
+  // ----------------------------------------------------------
 
   ctx.lineWidth = 2;
+
 
   for (
     let x = 0;
@@ -239,26 +260,39 @@ function drawWave(canvas, id) {
   ) {
 
     const wave1 =
-      Math.sin(x * 0.055) *
-      height * 0.16;
+      Math.sin(
+        x * 0.055
+      ) *
+      height *
+      0.16;
 
     const wave2 =
-      Math.sin(x * 0.013) *
-      height * 0.18;
+      Math.sin(
+        x * 0.013
+      ) *
+      height *
+      0.18;
 
     const wave3 =
-      Math.sin(x * 0.11) *
-      height * 0.07;
+      Math.sin(
+        x * 0.11
+      ) *
+      height *
+      0.07;
 
     const wave4 =
-      Math.sin(x * 0.021) *
-      height * 0.10;
+      Math.sin(
+        x * 0.021
+      ) *
+      height *
+      0.10;
 
     const amplitude =
       wave1 +
       wave2 +
       wave3 +
       wave4;
+
 
     const y1 =
       height / 2 -
@@ -269,17 +303,10 @@ function drawWave(canvas, id) {
       Math.abs(amplitude);
 
 
-    if (x <= positionX) {
-
-      ctx.strokeStyle =
-        color;
-
-    } else {
-
-      ctx.strokeStyle =
-        darkColor;
-
-    }
+    ctx.strokeStyle =
+      x <= positionX
+        ? color
+        : darkColor;
 
 
     ctx.beginPath();
@@ -321,7 +348,7 @@ function drawWave(canvas, id) {
   ctx.stroke();
 
 
-  // Curseur de lecture
+  // Curseur
 
   if (duration > 0) {
 
@@ -365,15 +392,20 @@ function drawWave(canvas, id) {
 }
 
 
-// Dessin initial
+const waveA =
+  $("#waveA");
+
+const waveB =
+  $("#waveB");
+
 
 drawWave(
-  $("#waveA"),
+  waveA,
   "A"
 );
 
 drawWave(
-  $("#waveB"),
+  waveB,
   "B"
 );
 
@@ -407,21 +439,14 @@ function seekWave(
     canvas.getBoundingClientRect();
 
 
-  if (
-    rect.width <= 0
-  ) {
+  if (!rect.width)
     return;
-  }
 
-
-  // Position du clic dans le canvas
 
   let x =
     clientX -
     rect.left;
 
-
-  // Bloquer entre gauche et droite
 
   x =
     Math.max(
@@ -433,26 +458,18 @@ function seekWave(
     );
 
 
-  // Pourcentage
-
   const percentage =
     x / rect.width;
 
-
-  // Nouvelle position
 
   const newTime =
     percentage *
     audio.duration;
 
 
-  // Déplacement réel de la musique
-
   audio.currentTime =
     newTime;
 
-
-  // Redessiner immédiatement
 
   drawWave(
     canvas,
@@ -461,23 +478,17 @@ function seekWave(
 
 
   console.log(
-    `🎵 Deck ${id}: ${newTime.toFixed(2)} secondes / ${audio.duration.toFixed(2)} secondes`
+    `🎵 Deck ${id}: ${newTime.toFixed(2)}s / ${audio.duration.toFixed(2)}s`
   );
 
 }
 
 
-// ============================================================
-// WAVEFORM DECK A
-// ============================================================
-
-const waveA =
-  $("#waveA");
+// Deck A
 
 waveA.style.cursor =
   "pointer";
 
-
 waveA.addEventListener(
   "click",
   event => {
@@ -493,17 +504,11 @@ waveA.addEventListener(
 );
 
 
-// ============================================================
-// WAVEFORM DECK B
-// ============================================================
-
-const waveB =
-  $("#waveB");
+// Deck B
 
 waveB.style.cursor =
   "pointer";
 
-
 waveB.addEventListener(
   "click",
   event => {
@@ -519,9 +524,7 @@ waveB.addEventListener(
 );
 
 
-// ============================================================
-// TOUCHER LA WAVEFORM SUR TÉLÉPHONE
-// ============================================================
+// Téléphone / tactile
 
 waveA.addEventListener(
   "pointerdown",
@@ -554,7 +557,7 @@ waveB.addEventListener(
 
 
 // ============================================================
-// SUIVI DE LA POSITION DE LECTURE
+// SUIVI DE LA MUSIQUE
 // ============================================================
 
 audioA.addEventListener(
@@ -584,7 +587,7 @@ audioB.addEventListener(
 
 
 // ============================================================
-// REDESSINER SI LA FENÊTRE CHANGE
+// RESIZE
 // ============================================================
 
 window.addEventListener(
@@ -776,7 +779,8 @@ function setupJog(
     "pointermove",
     event => {
 
-      if (!touching) return;
+      if (!touching)
+        return;
 
       const movement =
         event.clientX -
@@ -818,7 +822,7 @@ setupJog(
 
 
 // ============================================================
-// CUE
+// CUE SOURIS
 // ============================================================
 
 function setupCue(
@@ -841,7 +845,6 @@ function setupCue(
       if (!audio.duration)
         return;
 
-
       audio.currentTime = 0;
 
       drawWave(
@@ -861,6 +864,7 @@ setupCue(
   waveA,
   "A"
 );
+
 
 setupCue(
   "#cueB",
@@ -894,7 +898,9 @@ $("#recordBtn")
 let midiAccess = null;
 
 
-// Connexion MIDI
+// ------------------------------------------------------------
+// CONNEXION MIDI
+// ------------------------------------------------------------
 
 async function connectMIDI() {
 
@@ -937,9 +943,9 @@ async function connectMIDI() {
 }
 
 
-// ============================================================
-// CONNECTER LES ENTRÉES MIDI
-// ============================================================
+// ------------------------------------------------------------
+// ENTRÉES MIDI
+// ------------------------------------------------------------
 
 function connectMIDIInputs() {
 
@@ -975,9 +981,9 @@ function connectMIDIInputs() {
 }
 
 
-// ============================================================
+// ------------------------------------------------------------
 // BOUTON MIDI
-// ============================================================
+// ------------------------------------------------------------
 
 $("#midiBtn")
   .addEventListener(
@@ -1059,8 +1065,6 @@ function handleMIDIMessage(
   let pressed = false;
 
 
-  // NOTE ON
-
   if (
     command === 0x90
   ) {
@@ -1070,9 +1074,6 @@ function handleMIDIMessage(
 
   }
 
-
-  // NOTE OFF
-
   else if (
     command === 0x80
   ) {
@@ -1080,7 +1081,6 @@ function handleMIDIMessage(
     pressed = false;
 
   }
-
 
   else {
 
@@ -1115,7 +1115,102 @@ function handleMIDIMessage(
 
 
 // ============================================================
-// MAPPING DJ2GO2
+// HOT CUE
+// ============================================================
+
+function triggerHotCue(
+  deckId,
+  cueNumber
+) {
+
+  const audio =
+    deckId === "A"
+      ? audioA
+      : audioB;
+
+
+  const pads =
+    document.querySelectorAll(
+      deckId === "A"
+        ? ".deckA .cuePad"
+        : ".deckB .cuePad"
+    );
+
+
+  const pad =
+    pads[cueNumber - 1];
+
+
+  // Animation du bouton
+
+  if (pad) {
+
+    pad.animate(
+      [
+        {
+          transform: "scale(1)",
+          filter: "brightness(1)"
+        },
+        {
+          transform: "scale(.88)",
+          filter: "brightness(2)"
+        },
+        {
+          transform: "scale(1)",
+          filter: "brightness(1)"
+        }
+      ],
+      {
+        duration: 160
+      }
+    );
+
+  }
+
+
+  if (
+    !audio.src ||
+    !audio.duration
+  ) {
+
+    console.log(
+      `🎹 CUE ${cueNumber} DECK ${deckId}: aucune musique chargée`
+    );
+
+    return;
+
+  }
+
+
+  // CUE 1
+
+  if (
+    cueNumber === 1
+  ) {
+
+    audio.currentTime =
+      0;
+
+
+    drawWave(
+      deckId === "A"
+        ? waveA
+        : waveB,
+      deckId
+    );
+
+
+    console.log(
+      `🔥 HOT CUE ${cueNumber} DECK ${deckId}`
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// MAPPING MIDI
 // ============================================================
 
 function handleMIDINote(
@@ -1126,22 +1221,43 @@ function handleMIDINote(
 ) {
 
 
-  // ----------------------------------------------------------
+  // ==========================================================
+  // DJ2GO2
   // DECK A
-  // Canal 1
-  // PLAY = NOTE 0
-  // ----------------------------------------------------------
+  // HOT CUE 1
+  //
+  // CANAL 5
+  // NOTE 2
+  // ==========================================================
+
+  if (
+    channel === 5 &&
+    note === 2
+  ) {
+
+    if (pressed) {
+
+      triggerHotCue(
+        "A",
+        1
+      );
+
+    }
+
+    return;
+
+  }
+
+
+  // ==========================================================
+  // DECK A PLAY
+  // CANAL 1 / NOTE 0
+  // ==========================================================
 
   if (
     channel === 1 &&
     note === 0
   ) {
-
-    console.log(
-      "🎵 PLAY A:",
-      pressed
-    );
-
 
     if (pressed) {
 
@@ -1156,22 +1272,15 @@ function handleMIDINote(
   }
 
 
-  // ----------------------------------------------------------
-  // DECK B
-  // Canal 2
-  // PLAY = NOTE 0
-  // ----------------------------------------------------------
+  // ==========================================================
+  // DECK B PLAY
+  // CANAL 2 / NOTE 0
+  // ==========================================================
 
   if (
     channel === 2 &&
     note === 0
   ) {
-
-    console.log(
-      "🎵 PLAY B:",
-      pressed
-    );
-
 
     if (pressed) {
 
@@ -1186,9 +1295,9 @@ function handleMIDINote(
   }
 
 
-  // ----------------------------------------------------------
-  // AUTRES NOTES
-  // ----------------------------------------------------------
+  // ==========================================================
+  // NOTE NON ENCORE PROGRAMMÉE
+  // ==========================================================
 
   console.log(
     "🎹 NOTE NON MAPPÉE",
@@ -1207,7 +1316,9 @@ function handleMIDINote(
 // PLAY / PAUSE MIDI
 // ============================================================
 
-async function toggleDeckPlay(id) {
+async function toggleDeckPlay(
+  id
+) {
 
   const deck =
     state[id];
@@ -1269,7 +1380,7 @@ async function toggleDeckPlay(id) {
 
 
 // ============================================================
-// DÉTECTION AUTOMATIQUE DU DJ2GO2
+// DÉTECTION MIDI AUTOMATIQUE
 // ============================================================
 
 if (
@@ -1317,7 +1428,7 @@ if (
 
 
 // ============================================================
-// HOT CUES
+// HOT CUES SOURIS
 // ============================================================
 
 document
@@ -1392,6 +1503,10 @@ console.log(
 
 console.log(
   "🎹 MIDI prêt"
+);
+
+console.log(
+  "🔥 HOT CUE 1 A = CANAL 5 / NOTE 2"
 );
 
 console.log(
